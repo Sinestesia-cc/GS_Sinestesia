@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gaussian Splat en VR</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        canvas {
+            display: block;
+        }
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <h2>🥽 Modo VR Activado</h2>
+        <p>Presiona el botón "Enter VR" para comenzar</p>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.157.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.157.0/examples/jsm/",
+            "@lumaai/luma-web": "https://unpkg.com/@lumaai/luma-web@0.2.0/dist/library/luma-web.module.js"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import { WebGLRenderer, PerspectiveCamera, Scene } from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { VRButton } from 'three/addons/webxr/VRButton.js';
+        import { LumaSplatsThree } from '@lumaai/luma-web';
+
+        // Configuración básica
+        let renderer = new WebGLRenderer({ antialias: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.xr.enabled = true; // ¡ACTIVAR VR!
+        document.body.appendChild(renderer.domElement);
+
+        // Crear escena y cámara
+        let scene = new Scene();
+        let camera = new PerspectiveCamera(
+            75, 
+            window.innerWidth / window.innerHeight, 
+            0.1, 
+            1000
+        );
+        camera.position.z = 2;
+
+        // Controles normales (para cuando no estás en VR)
+        let controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        // ¡BOTÓN DE VR! Este crea el botón para entrar a VR
+        let vrButton = VRButton.createButton(renderer);
+        document.body.appendChild(vrButton);
+
+        // Cargar el Gaussian Splat
+        let splat = new LumaSplatsThree({
+            source: 'https://lumalabs.ai/capture/ca9ea966-ca24-4ec1-ab0f-af665cb546ff',
+        });
+        scene.add(splat);
+
+        // Función de animación (funciona tanto en VR como fuera)
+        function animate() {
+            renderer.setAnimationLoop(() => {
+                controls.update();
+                renderer.render(scene, camera);
+            });
+        }
+
+        animate();
+
+        // Ajustar tamaño
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
