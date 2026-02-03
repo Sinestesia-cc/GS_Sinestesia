@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gaussian Splat - Versión Completa (Corregida)</title>
+    <title>Gaussian Splat - Versión Completa</title>
     <style>
         body {
             margin: 0;
@@ -165,9 +165,56 @@
             display: none;
             z-index: 200;
         }
+
+        /* Loading overlay */
+        #loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 300;
+        }
+
+        .loader {
+            color: white;
+            text-align: center;
+        }
+
+        .loader h2 {
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
+    <div id="loading">
+        <div class="loader">
+            <h2>Cargando Gaussian Splat...</h2>
+            <div class="spinner"></div>
+            <p style="margin-top: 20px; opacity: 0.7;">Esto puede tardar unos segundos</p>
+        </div>
+    </div>
+
     <div id="info">
         <h2>🎮 Controles</h2>
         <p><span class="key">W A S D</span> - Mover</p>
@@ -179,7 +226,6 @@
         <p><span class="key">F</span> - Modo FPS ON/OFF</p>
         <p><span class="key">T</span> - Texto 3D</p>
         <p><span class="key">M</span> - Añadir cubo</p>
-        <p><span class="key">G</span> - Grid ON/OFF</p>
     </div>
 
     <div id="stats">
@@ -195,7 +241,6 @@
         <button class="btn" onclick="agregarModelo3D()">🎲 Cubo</button>
         <button class="btn" onclick="agregarEsfera()">⚽ Esfera</button>
         <button class="btn" onclick="toggleLuces()">💡 Luces</button>
-        <button class="btn" onclick="toggleGrid()">📐 Grid</button>
         <button class="btn" onclick="resetCamera()">🎥 Reset</button>
     </div>
 
@@ -226,8 +271,6 @@
             AmbientLight,
             PointLight,
             HemisphereLight,
-            GridHelper,
-            AxesHelper,
             Vector3
         } from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -258,18 +301,18 @@
             0.1, 
             1000
         );
-        camera.position.set(0, 1.6, 5); // Altura de una persona
+        camera.position.set(0, 1.6, 5);
 
         // ==================== CONTROLES ====================
         let orbitControls = new OrbitControls(camera, canvas);
         orbitControls.enableDamping = true;
         orbitControls.dampingFactor = 0.05;
         orbitControls.maxPolarAngle = Math.PI;
-        orbitControls.enabled = true; // ← IMPORTANTE: Comienza habilitado
+        orbitControls.enabled = true;
 
-        // Controles FPS (inicialmente desactivados)
+        // Controles FPS
         let fpsControls = new PointerLockControls(camera, canvas);
-        let controlMode = 'orbit'; // 'orbit' o 'fps'
+        let controlMode = 'orbit';
 
         // ==================== MOVIMIENTO WASD ====================
         let moveForward = false;
@@ -284,10 +327,9 @@
         let direction = new Vector3();
         let prevTime = performance.now();
 
-        // ⚡ VELOCIDADES CORREGIDAS (mucho más rápidas)
-        const WALK_SPEED = 15.0;  // Era 5.0, ahora 3x más rápido
-        const RUN_SPEED = 30.0;   // Era 10.0, ahora 3x más rápido
-        const FLY_SPEED = 10.0;   // Era 3.0, ahora 3x más rápido
+        const WALK_SPEED = 15.0;
+        const RUN_SPEED = 30.0;
+        const FLY_SPEED = 10.0;
 
         // ==================== TECLADO ====================
         document.addEventListener('keydown', (event) => {
@@ -311,9 +353,6 @@
                     break;
                 case 'KeyM':
                     agregarModelo3D();
-                    break;
-                case 'KeyG':
-                    toggleGrid();
                     break;
             }
         });
@@ -366,25 +405,36 @@
         }
         createColorLights();
 
-        // ==================== HELPERS ====================
-        // 📏 GRID CORREGIDO - Bajado mucho más
-        let gridHelper = new GridHelper(50, 50, 0x888888, 0x444444);
-        gridHelper.position.y = -2; // ← Bajado 2 unidades
-        scene.add(gridHelper);
-        let gridVisible = true;
-
-        let axesHelper = new AxesHelper(5);
-        scene.add(axesHelper);
-
         // ==================== GAUSSIAN SPLAT ====================
+        // 🎯 TU SPLAT AQUÍ - URL corregida
         let splat = new LumaSplatsThree({
-            source: 'https://lumalabs.ai/capture/D869F8B6-02BE-49FE-A512-463CE9F26238',
+            source: 'https://lumalabs.ai/capture/d869f8b6-02be-49fe-a512-463ce9f26238',
             enableThreeShaderIntegration: false
         });
+        
+        // Ajustar posición y escala si es necesario
+        splat.position.set(0, 0, 0);
+        // splat.scale.set(1, 1, 1); // Descomenta y ajusta si tu splat es muy grande/pequeño
+        
         scene.add(splat);
 
+        // Evento cuando carga el splat
         splat.onLoad = () => {
-            mostrarMensaje('Splat cargado! 🎉');
+            console.log('✅ Splat cargado correctamente');
+            document.getElementById('loading').style.display = 'none';
+            mostrarMensaje('¡Splat cargado! 🎉');
+        };
+
+        // Evento de error
+        splat.onError = (error) => {
+            console.error('❌ Error cargando splat:', error);
+            document.getElementById('loading').innerHTML = `
+                <div class="loader">
+                    <h2 style="color: #ff6b6b;">Error al cargar el splat</h2>
+                    <p>Por favor verifica la URL del splat</p>
+                    <p style="font-size: 12px; opacity: 0.7;">${error}</p>
+                </div>
+            `;
         };
 
         // ==================== TEXTO 3D ====================
@@ -503,13 +553,6 @@
             mostrarMensaje(lightsEnabled ? 'Luces de colores ON 💡' : 'Luces de colores OFF');
         };
 
-        window.toggleGrid = function() {
-            gridVisible = !gridVisible;
-            gridHelper.visible = gridVisible;
-            axesHelper.visible = gridVisible;
-            mostrarMensaje(gridVisible ? 'Grid activado 📐' : 'Grid desactivado');
-        };
-
         window.resetCamera = function() {
             camera.position.set(0, 1.6, 5);
             camera.lookAt(0, 0, 0);
@@ -520,7 +563,6 @@
 
         function toggleControlMode() {
             if (controlMode === 'orbit') {
-                // Cambiar a FPS
                 orbitControls.enabled = false;
                 fpsControls.lock();
                 controlMode = 'fps';
@@ -528,7 +570,6 @@
                 document.getElementById('mode').textContent = 'FPS';
                 mostrarMensaje('Modo FPS activado! 🎮 (ESC para salir)');
             } else {
-                // Cambiar a Orbit
                 fpsControls.unlock();
                 orbitControls.enabled = true;
                 controlMode = 'orbit';
@@ -538,7 +579,6 @@
             }
         }
 
-        // Eventos de PointerLock
         fpsControls.addEventListener('lock', () => {
             document.getElementById('crosshair').style.display = 'block';
         });
@@ -598,7 +638,7 @@
             const time = performance.now();
             const delta = (time - prevTime) / 1000;
 
-            // ⚡ MOVIMIENTO WASD MEJORADO
+            // Movimiento WASD
             velocity.x -= velocity.x * 10.0 * delta;
             velocity.z -= velocity.z * 10.0 * delta;
             velocity.y -= velocity.y * 10.0 * delta;
@@ -614,13 +654,11 @@
             if (moveLeft || moveRight) velocity.x -= direction.x * speed * delta;
             if (moveUp || moveDown) velocity.y += direction.y * FLY_SPEED * delta;
 
-            // Aplicar movimiento según el modo
             if (controlMode === 'fps') {
                 fpsControls.moveRight(-velocity.x * delta);
                 fpsControls.moveForward(-velocity.z * delta);
                 camera.position.y += velocity.y * delta;
             } else {
-                // En modo orbit, mover la cámara y el target juntos
                 const forward = new Vector3();
                 camera.getWorldDirection(forward);
                 forward.y = 0;
@@ -663,11 +701,10 @@
                 });
             }
 
-            // 🔧 ACTUALIZAR SOLO EL CONTROL ACTIVO
+            // Actualizar solo el control activo
             if (controlMode === 'orbit') {
                 orbitControls.update();
             }
-            // No actualizar fpsControls aquí, se actualiza solo
 
             // Render principal
             renderer.render(scene, camera);
@@ -691,8 +728,10 @@
 
         // ==================== INSTRUCCIONES INICIALES ====================
         setTimeout(() => {
-            mostrarMensaje('¡Usa WASD para moverte! Shift para correr 🏃');
-        }, 1000);
+            if (document.getElementById('loading').style.display !== 'none') {
+                mostrarMensaje('Cargando tu splat... Por favor espera');
+            }
+        }, 2000);
 
     </script>
 </body>
