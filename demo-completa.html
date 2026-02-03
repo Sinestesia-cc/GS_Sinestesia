@@ -327,17 +327,17 @@
         let direction = new Vector3();
         let prevTime = performance.now();
 
-        const WALK_SPEED = 45.0;
-        const RUN_SPEED = 60.0;
-        const FLY_SPEED = 40.0;
+        const WALK_SPEED = 15.0;
+        const RUN_SPEED = 30.0;
+        const FLY_SPEED = 10.0;
 
         // ==================== TECLADO ====================
         document.addEventListener('keydown', (event) => {
             switch (event.code) {
                 case 'KeyW': moveForward = true; break;
                 case 'KeyS': moveBackward = true; break;
-                case 'KeyA': moveRight = true; break;
-                case 'KeyD': moveLeft = true; break;
+                case 'KeyA': moveLeft = true; break;
+                case 'KeyD': moveRight = true; break;
                 case 'KeyQ': moveUp = true; break;
                 case 'KeyE': moveDown = true; break;
                 case 'ShiftLeft': 
@@ -361,8 +361,8 @@
             switch (event.code) {
                 case 'KeyW': moveForward = false; break;
                 case 'KeyS': moveBackward = false; break;
-                case 'KeyA': moveRight = false; break;
-                case 'KeyD': moveLeft = false; break;
+                case 'KeyA': moveLeft = false; break;
+                case 'KeyD': moveRight = false; break;
                 case 'KeyQ': moveUp = false; break;
                 case 'KeyE': moveDown = false; break;
                 case 'ShiftLeft': 
@@ -444,7 +444,7 @@
         function crearTexto3D() {
             const loader = new FontLoader();
             loader.load('https://threejs.org/examples/fonts/helvetiker_bold.typeface.json', (font) => {
-                const textGeometry = new TextGeometry('Hola, Sinestesia!', {
+                const textGeometry = new TextGeometry('¡Hola Mundo 3D!', {
                     font: font,
                     size: 0.5,
                     height: 0.1,
@@ -463,7 +463,7 @@
                 ];
 
                 texto3D = new Mesh(textGeometry, materials);
-                texto3D.position.set(0, 6, -4);
+                texto3D.position.set(0, 2, -2);
                 texto3D.castShadow = true;
                 texto3D.visible = false;
                 scene.add(texto3D);
@@ -606,7 +606,7 @@
             canvas: document.getElementById('minimap'),
             alpha: true
         });
-        minimapRenderer.setSize(250, 250);
+        minimapRenderer.setSize(150, 150);
         
         let minimapCamera = new PerspectiveCamera(60, 1, 0.1, 100);
         minimapCamera.position.set(0, 20, 0);
@@ -687,7 +687,7 @@
 
             // Animar texto 3D
             if (texto3D && texto3DVisible) {
-                texto3D.rotation.y += 0;
+                texto3D.rotation.y += 0.01;
                 texto3D.position.y = 2 + Math.sin(time * 0.001) * 0.2;
             }
 
