@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gaussian Splat - Versión Completa</title>
+    <title>Gaussian Splat - Versión Completa (Corregida)</title>
     <style>
         body {
             margin: 0;
@@ -80,6 +80,9 @@
             transform: translateX(-50%);
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 90%;
         }
 
         .btn {
@@ -169,13 +172,14 @@
         <h2>🎮 Controles</h2>
         <p><span class="key">W A S D</span> - Mover</p>
         <p><span class="key">Q E</span> - Subir/Bajar</p>
-        <p><span class="key">Shift</span> - Correr</p>
+        <p><span class="key">Shift</span> - Correr (2x velocidad)</p>
         <p><span class="key">Mouse</span> - Rotar vista</p>
-        <p><span class="key">Click</span> - Capturar ratón</p>
+        <p><span class="key">Click</span> - Capturar ratón (FPS)</p>
         <p><span class="key">ESC</span> - Liberar ratón</p>
-        <p><span class="key">F</span> - Modo FPS</p>
-        <p><span class="key">T</span> - Toggle texto 3D</p>
-        <p><span class="key">M</span> - Añadir modelo 3D</p>
+        <p><span class="key">F</span> - Modo FPS ON/OFF</p>
+        <p><span class="key">T</span> - Texto 3D</p>
+        <p><span class="key">M</span> - Añadir cubo</p>
+        <p><span class="key">G</span> - Grid ON/OFF</p>
     </div>
 
     <div id="stats">
@@ -183,14 +187,16 @@
         <div>Posición: <span id="position">0, 0, 0</span></div>
         <div>Objetos: <span id="objects">0</span></div>
         <div>Modo: <span id="mode">Exploración</span></div>
+        <div>Velocidad: <span id="speed">Normal</span></div>
     </div>
 
     <div id="controls">
         <button class="btn" onclick="toggleTexto3D()">📝 Texto 3D</button>
-        <button class="btn" onclick="agregarModelo3D()">🎲 Añadir Cubo</button>
-        <button class="btn" onclick="agregarEsfera()">⚽ Añadir Esfera</button>
+        <button class="btn" onclick="agregarModelo3D()">🎲 Cubo</button>
+        <button class="btn" onclick="agregarEsfera()">⚽ Esfera</button>
         <button class="btn" onclick="toggleLuces()">💡 Luces</button>
-        <button class="btn" onclick="resetCamera()">🎥 Reset Cámara</button>
+        <button class="btn" onclick="toggleGrid()">📐 Grid</button>
+        <button class="btn" onclick="resetCamera()">🎥 Reset</button>
     </div>
 
     <canvas id="minimap"></canvas>
@@ -215,7 +221,6 @@
             BoxGeometry,
             SphereGeometry,
             MeshStandardMaterial,
-            MeshBasicMaterial,
             Mesh,
             DirectionalLight,
             AmbientLight,
@@ -223,11 +228,7 @@
             HemisphereLight,
             GridHelper,
             AxesHelper,
-            Vector3,
-            Raycaster,
-            DoubleSide,
-            TextureLoader,
-            PlaneGeometry
+            Vector3
         } from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
@@ -263,7 +264,8 @@
         let orbitControls = new OrbitControls(camera, canvas);
         orbitControls.enableDamping = true;
         orbitControls.dampingFactor = 0.05;
-        orbitControls.maxPolarAngle = Math.PI; // Permitir ver hacia arriba/abajo
+        orbitControls.maxPolarAngle = Math.PI;
+        orbitControls.enabled = true; // ← IMPORTANTE: Comienza habilitado
 
         // Controles FPS (inicialmente desactivados)
         let fpsControls = new PointerLockControls(camera, canvas);
@@ -276,17 +278,16 @@
         let moveRight = false;
         let moveUp = false;
         let moveDown = false;
-        let canJump = false;
         let isRunning = false;
 
         let velocity = new Vector3();
         let direction = new Vector3();
         let prevTime = performance.now();
 
-        // Velocidades
-        const WALK_SPEED = 5.0;
-        const RUN_SPEED = 10.0;
-        const FLY_SPEED = 3.0;
+        // ⚡ VELOCIDADES CORREGIDAS (mucho más rápidas)
+        const WALK_SPEED = 15.0;  // Era 5.0, ahora 3x más rápido
+        const RUN_SPEED = 30.0;   // Era 10.0, ahora 3x más rápido
+        const FLY_SPEED = 10.0;   // Era 3.0, ahora 3x más rápido
 
         // ==================== TECLADO ====================
         document.addEventListener('keydown', (event) => {
@@ -297,7 +298,10 @@
                 case 'KeyD': moveRight = true; break;
                 case 'KeyQ': moveUp = true; break;
                 case 'KeyE': moveDown = true; break;
-                case 'ShiftLeft': isRunning = true; break;
+                case 'ShiftLeft': 
+                    isRunning = true;
+                    document.getElementById('speed').textContent = 'Corriendo 🏃';
+                    break;
                 
                 case 'KeyF':
                     toggleControlMode();
@@ -307,6 +311,9 @@
                     break;
                 case 'KeyM':
                     agregarModelo3D();
+                    break;
+                case 'KeyG':
+                    toggleGrid();
                     break;
             }
         });
@@ -319,12 +326,15 @@
                 case 'KeyD': moveRight = false; break;
                 case 'KeyQ': moveUp = false; break;
                 case 'KeyE': moveDown = false; break;
-                case 'ShiftLeft': isRunning = false; break;
+                case 'ShiftLeft': 
+                    isRunning = false;
+                    document.getElementById('speed').textContent = 'Normal 🚶';
+                    break;
             }
         });
 
         // ==================== ILUMINACIÓN ====================
-        let ambientLight = new AmbientLight(0xffffff, 0.5);
+        let ambientLight = new AmbientLight(0xffffff, 0.6);
         scene.add(ambientLight);
 
         let directionalLight = new DirectionalLight(0xffffff, 0.8);
@@ -337,7 +347,7 @@
         let hemisphereLight = new HemisphereLight(0x87ceeb, 0x545454, 0.3);
         scene.add(hemisphereLight);
 
-        // Luces puntuales de colores (desactivadas por defecto)
+        // Luces puntuales de colores
         let pointLights = [];
         let lightColors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00];
         let lightsEnabled = false;
@@ -357,18 +367,25 @@
         createColorLights();
 
         // ==================== HELPERS ====================
+        // 📏 GRID CORREGIDO - Bajado mucho más
         let gridHelper = new GridHelper(50, 50, 0x888888, 0x444444);
+        gridHelper.position.y = -2; // ← Bajado 2 unidades
         scene.add(gridHelper);
+        let gridVisible = true;
 
         let axesHelper = new AxesHelper(5);
         scene.add(axesHelper);
 
         // ==================== GAUSSIAN SPLAT ====================
         let splat = new LumaSplatsThree({
-            source: 'https://lumalabs.ai/capture/D869F8B6-02BE-49FE-A512-463CE9F26238',
+            source: 'https://lumalabs.ai/capture/ca9ea966-ca24-4ec1-ab0f-af665cb546ff',
             enableThreeShaderIntegration: false
         });
         scene.add(splat);
+
+        splat.onLoad = () => {
+            mostrarMensaje('Splat cargado! 🎉');
+        };
 
         // ==================== TEXTO 3D ====================
         let texto3D = null;
@@ -391,8 +408,8 @@
                 textGeometry.center();
 
                 const materials = [
-                    new MeshStandardMaterial({ color: 0xff6b6b }), // Frente
-                    new MeshStandardMaterial({ color: 0x4ecdc4 })  // Lados
+                    new MeshStandardMaterial({ color: 0xff6b6b }),
+                    new MeshStandardMaterial({ color: 0x4ecdc4 })
                 ];
 
                 texto3D = new Mesh(textGeometry, materials);
@@ -400,8 +417,6 @@
                 texto3D.castShadow = true;
                 texto3D.visible = false;
                 scene.add(texto3D);
-
-                mostrarMensaje('Texto 3D creado!');
             });
         }
 
@@ -419,7 +434,6 @@
             });
             const cube = new Mesh(geometry, material);
             
-            // Posición aleatoria alrededor de la cámara
             const distance = 3;
             const angle = Math.random() * Math.PI * 2;
             cube.position.set(
@@ -489,6 +503,13 @@
             mostrarMensaje(lightsEnabled ? 'Luces de colores ON 💡' : 'Luces de colores OFF');
         };
 
+        window.toggleGrid = function() {
+            gridVisible = !gridVisible;
+            gridHelper.visible = gridVisible;
+            axesHelper.visible = gridVisible;
+            mostrarMensaje(gridVisible ? 'Grid activado 📐' : 'Grid desactivado');
+        };
+
         window.resetCamera = function() {
             camera.position.set(0, 1.6, 5);
             camera.lookAt(0, 0, 0);
@@ -505,7 +526,7 @@
                 controlMode = 'fps';
                 document.getElementById('crosshair').style.display = 'block';
                 document.getElementById('mode').textContent = 'FPS';
-                mostrarMensaje('Modo FPS activado! 🎮');
+                mostrarMensaje('Modo FPS activado! 🎮 (ESC para salir)');
             } else {
                 // Cambiar a Orbit
                 fpsControls.unlock();
@@ -547,12 +568,7 @@
         });
         minimapRenderer.setSize(150, 150);
         
-        let minimapCamera = new PerspectiveCamera(
-            60,
-            1,
-            0.1,
-            100
-        );
+        let minimapCamera = new PerspectiveCamera(60, 1, 0.1, 100);
         minimapCamera.position.set(0, 20, 0);
         minimapCamera.lookAt(0, 0, 0);
 
@@ -561,7 +577,6 @@
         let lastTime = performance.now();
 
         function actualizarStats() {
-            // FPS
             frameCount++;
             const currentTime = performance.now();
             if (currentTime >= lastTime + 1000) {
@@ -570,11 +585,9 @@
                 lastTime = currentTime;
             }
 
-            // Posición
             document.getElementById('position').textContent = 
                 `${camera.position.x.toFixed(1)}, ${camera.position.y.toFixed(1)}, ${camera.position.z.toFixed(1)}`;
 
-            // Objetos
             document.getElementById('objects').textContent = scene.children.length;
         }
 
@@ -585,45 +598,44 @@
             const time = performance.now();
             const delta = (time - prevTime) / 1000;
 
-            // Movimiento WASD
-            if (controlMode === 'fps' || true) { // Siempre permitir WASD
-                velocity.x -= velocity.x * 10.0 * delta;
-                velocity.z -= velocity.z * 10.0 * delta;
-                velocity.y -= velocity.y * 10.0 * delta;
+            // ⚡ MOVIMIENTO WASD MEJORADO
+            velocity.x -= velocity.x * 10.0 * delta;
+            velocity.z -= velocity.z * 10.0 * delta;
+            velocity.y -= velocity.y * 10.0 * delta;
 
-                direction.z = Number(moveForward) - Number(moveBackward);
-                direction.x = Number(moveRight) - Number(moveLeft);
-                direction.y = Number(moveUp) - Number(moveDown);
-                direction.normalize();
+            direction.z = Number(moveForward) - Number(moveBackward);
+            direction.x = Number(moveRight) - Number(moveLeft);
+            direction.y = Number(moveUp) - Number(moveDown);
+            direction.normalize();
 
-                const speed = isRunning ? RUN_SPEED : WALK_SPEED;
+            const speed = isRunning ? RUN_SPEED : WALK_SPEED;
 
-                if (moveForward || moveBackward) velocity.z -= direction.z * speed * delta;
-                if (moveLeft || moveRight) velocity.x -= direction.x * speed * delta;
-                if (moveUp || moveDown) velocity.y += direction.y * FLY_SPEED * delta;
+            if (moveForward || moveBackward) velocity.z -= direction.z * speed * delta;
+            if (moveLeft || moveRight) velocity.x -= direction.x * speed * delta;
+            if (moveUp || moveDown) velocity.y += direction.y * FLY_SPEED * delta;
 
-                if (controlMode === 'fps') {
-                    fpsControls.moveRight(-velocity.x * delta);
-                    fpsControls.moveForward(-velocity.z * delta);
-                    camera.position.y += velocity.y * delta;
-                } else {
-                    // En modo orbit, mover la cámara y el target juntos
-                    const forward = new Vector3();
-                    camera.getWorldDirection(forward);
-                    forward.y = 0;
-                    forward.normalize();
+            // Aplicar movimiento según el modo
+            if (controlMode === 'fps') {
+                fpsControls.moveRight(-velocity.x * delta);
+                fpsControls.moveForward(-velocity.z * delta);
+                camera.position.y += velocity.y * delta;
+            } else {
+                // En modo orbit, mover la cámara y el target juntos
+                const forward = new Vector3();
+                camera.getWorldDirection(forward);
+                forward.y = 0;
+                forward.normalize();
 
-                    const right = new Vector3();
-                    right.crossVectors(camera.up, forward).normalize();
+                const right = new Vector3();
+                right.crossVectors(camera.up, forward).normalize();
 
-                    camera.position.addScaledVector(forward, -velocity.z * delta);
-                    camera.position.addScaledVector(right, -velocity.x * delta);
-                    camera.position.y += velocity.y * delta;
+                camera.position.addScaledVector(forward, -velocity.z * delta);
+                camera.position.addScaledVector(right, -velocity.x * delta);
+                camera.position.y += velocity.y * delta;
 
-                    orbitControls.target.addScaledVector(forward, -velocity.z * delta);
-                    orbitControls.target.addScaledVector(right, -velocity.x * delta);
-                    orbitControls.target.y += velocity.y * delta;
-                }
+                orbitControls.target.addScaledVector(forward, -velocity.z * delta);
+                orbitControls.target.addScaledVector(right, -velocity.x * delta);
+                orbitControls.target.y += velocity.y * delta;
             }
 
             prevTime = time;
@@ -651,10 +663,11 @@
                 });
             }
 
-            // Actualizar controles
+            // 🔧 ACTUALIZAR SOLO EL CONTROL ACTIVO
             if (controlMode === 'orbit') {
                 orbitControls.update();
             }
+            // No actualizar fpsControls aquí, se actualiza solo
 
             // Render principal
             renderer.render(scene, camera);
@@ -664,7 +677,6 @@
             minimapCamera.position.z = camera.position.z;
             minimapRenderer.render(scene, minimapCamera);
 
-            // Actualizar stats
             actualizarStats();
         }
 
@@ -679,7 +691,7 @@
 
         // ==================== INSTRUCCIONES INICIALES ====================
         setTimeout(() => {
-            mostrarMensaje('¡Usa WASD para moverte! Presiona F para modo FPS 🎮');
+            mostrarMensaje('¡Usa WASD para moverte! Shift para correr 🏃');
         }, 1000);
 
     </script>
