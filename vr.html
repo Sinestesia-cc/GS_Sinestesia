@@ -3,150 +3,161 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gaussian Splat VR - Meta Quest</title>
+    <title>VR Splat - Meta Quest 3S</title>
     <style>
-        body {
+        * {
             margin: 0;
             padding: 0;
-            background: #000;
-            overflow: hidden;
+            box-sizing: border-box;
         }
-        
-        canvas {
-            display: block;
-            width: 100%;
-            height: 100vh;
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+            font-family: Arial, sans-serif;
         }
 
         #info {
             position: absolute;
             top: 20px;
             left: 20px;
+            right: 20px;
             color: white;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.9);
             padding: 20px;
-            border-radius: 15px;
-            z-index: 100;
-            max-width: 350px;
-            font-family: Arial, sans-serif;
+            border-radius: 10px;
+            z-index: 1000;
+            max-width: 400px;
         }
 
         #info h2 {
-            margin: 0 0 15px 0;
-            font-size: 24px;
             color: #4ecdc4;
+            margin-bottom: 15px;
         }
 
         #info p {
-            margin: 8px 0;
-            line-height: 1.6;
+            margin: 10px 0;
+            line-height: 1.5;
         }
 
         .status {
             display: inline-block;
-            padding: 5px 10px;
+            padding: 8px 15px;
             border-radius: 5px;
             font-weight: bold;
-            margin-top: 10px;
+            margin: 10px 0;
         }
 
-        .status.ready {
-            background: #2ecc71;
-            color: white;
-        }
-
-        .status.error {
-            background: #e74c3c;
-            color: white;
-        }
-
-        .status.loading {
-            background: #f39c12;
-            color: white;
-        }
-
-        /* Botón VR personalizado */
-        #vrButton {
-            position: absolute;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 20px 40px;
-            font-size: 20px;
-            font-weight: bold;
-            color: white;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            border-radius: 15px;
-            cursor: pointer;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            transition: all 0.3s;
-            z-index: 101;
-            font-family: Arial, sans-serif;
-        }
-
-        #vrButton:hover {
-            transform: translateX(-50%) translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
-        }
-
-        #vrButton:disabled {
-            background: #555;
-            cursor: not-allowed;
-        }
+        .status.ok { background: #2ecc71; }
+        .status.error { background: #e74c3c; }
+        .status.warning { background: #f39c12; }
 
         #loading {
-            position: absolute;
+            position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: white;
-            font-size: 24px;
-            font-family: Arial, sans-serif;
             text-align: center;
-            z-index: 102;
+            color: white;
+            z-index: 999;
         }
 
         .spinner {
             border: 4px solid rgba(255,255,255,0.3);
             border-top: 4px solid white;
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
+            width: 60px;
+            height: 60px;
             animation: spin 1s linear infinite;
-            margin: 20px auto;
+            margin: 0 auto 20px;
         }
 
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        .btn-container {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1001;
+        }
+
+        button {
+            padding: 20px 50px;
+            font-size: 22px;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: all 0.3s;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+        }
+
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        #debugInfo {
+            position: fixed;
+            bottom: 120px;
+            left: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.9);
+            color: #0f0;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 11px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 998;
+            display: none;
+        }
+
+        #debugInfo.show {
+            display: block;
+        }
     </style>
 </head>
 <body>
     <div id="loading">
-        <h2>Cargando Splat VR...</h2>
         <div class="spinner"></div>
+        <h2>Cargando VR...</h2>
     </div>
 
     <div id="info">
-        <h2>🥽 Modo VR para Meta Quest</h2>
-        <p><strong>Estado:</strong> <span id="status" class="status loading">Inicializando...</span></p>
-        <p>1. Espera a que cargue el splat</p>
-        <p>2. Presiona el botón azul "ENTRAR A VR"</p>
-        <p>3. ¡Disfruta en realidad virtual!</p>
-        <p style="font-size: 12px; opacity: 0.7; margin-top: 15px;">
-            Tip: Usa los controles del Quest para moverte en VR
-        </p>
+        <h2>🥽 Gaussian Splat VR</h2>
+        <p><strong>Estado:</strong> <span id="status" class="status warning">Verificando...</span></p>
+        <p id="instructions">Iniciando sistema VR...</p>
+        <button onclick="toggleDebug()" style="margin-top: 10px; padding: 5px 10px; font-size: 12px;">
+            Mostrar Debug
+        </button>
     </div>
 
-    <button id="vrButton" disabled>Cargando...</button>
+    <div id="debugInfo"></div>
+
+    <div class="btn-container">
+        <button id="vrButton" disabled>Iniciando...</button>
+    </div>
 
     <script type="importmap">
     {
         "imports": {
-            "three": "https://unpkg.com/three@0.157.0/build/three.module.js",
-            "three/addons/": "https://unpkg.com/three@0.157.0/examples/jsm/",
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
             "@lumaai/luma-web": "https://unpkg.com/@lumaai/luma-web@0.2.0/dist/library/luma-web.module.js"
         }
     }
@@ -159,220 +170,311 @@
             Scene,
             AmbientLight,
             DirectionalLight,
-            HemisphereLight,
-            Vector3
+            Color
         } from 'three';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-        import { VRButton } from 'three/addons/webxr/VRButton.js';
-        import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
         import { LumaSplatsThree } from '@lumaai/luma-web';
 
-        console.log('🎮 Iniciando aplicación VR...');
-
-        // ==================== CONFIGURACIÓN ====================
-        let container = document.createElement('div');
-        document.body.appendChild(container);
-
-        let renderer = new WebGLRenderer({ 
-            antialias: true,
-            alpha: true
-        });
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.xr.enabled = true; // ← CRÍTICO: Habilitar WebXR
-        container.appendChild(renderer.domElement);
-
-        console.log('✅ Renderer creado con XR habilitado');
-
-        let scene = new Scene();
+        // ==================== DEBUG ====================
+        const debugLogs = [];
         
-        let camera = new PerspectiveCamera(
-            75, 
-            window.innerWidth / window.innerHeight, 
-            0.1, 
-            1000
-        );
-        camera.position.set(0, 1.6, 3); // Altura de ojos en VR
-
-        console.log('✅ Cámara configurada');
-
-        // ==================== CONTROLES NO-VR ====================
-        let controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.target.set(0, 1, 0);
-        controls.update();
-
-        console.log('✅ Controles orbit configurados');
-
-        // ==================== ILUMINACIÓN ====================
-        let ambientLight = new AmbientLight(0xffffff, 0.6);
-        scene.add(ambientLight);
-
-        let directionalLight = new DirectionalLight(0xffffff, 0.8);
-        directionalLight.position.set(5, 10, 5);
-        scene.add(directionalLight);
-
-        let hemisphereLight = new HemisphereLight(0xffffff, 0x444444, 0.4);
-        scene.add(hemisphereLight);
-
-        console.log('✅ Iluminación añadida');
-
-        // ==================== GAUSSIAN SPLAT ====================
-        console.log('📥 Cargando Gaussian Splat...');
-        
-        let splat = new LumaSplatsThree({
-            source: 'https://lumalabs.ai/capture/d869f8b6-02be-49fe-a512-463ce9f26238',
-            enableThreeShaderIntegration: false
-        });
-
-        scene.add(splat);
-
-        splat.onLoad = () => {
-            console.log('✅ Splat cargado exitosamente!');
-            document.getElementById('loading').style.display = 'none';
-            updateStatus('ready', '¡Listo para VR!');
+        function log(msg, isError = false) {
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = isError ? '❌' : '✅';
+            const fullMsg = `[${timestamp}] ${prefix} ${msg}`;
             
-            // Habilitar botón VR
-            setupVRButton();
-        };
-
-        splat.onError = (error) => {
-            console.error('❌ Error cargando splat:', error);
-            document.getElementById('loading').innerHTML = `
-                <h2 style="color: #e74c3c;">Error al cargar</h2>
-                <p>No se pudo cargar el Gaussian Splat</p>
-            `;
-            updateStatus('error', 'Error al cargar');
-        };
-
-        // ==================== CONTROLES VR ====================
-        let controllerModelFactory = new XRControllerModelFactory();
-        let controller1, controller2;
-        let controllerGrip1, controllerGrip2;
-
-        function setupVRControllers() {
-            // Controller 1 (mano izquierda)
-            controller1 = renderer.xr.getController(0);
-            scene.add(controller1);
-
-            controllerGrip1 = renderer.xr.getControllerGrip(0);
-            controllerGrip1.add(controllerModelFactory.createControllerModel(controllerGrip1));
-            scene.add(controllerGrip1);
-
-            // Controller 2 (mano derecha)
-            controller2 = renderer.xr.getController(1);
-            scene.add(controller2);
-
-            controllerGrip2 = renderer.xr.getControllerGrip(1);
-            controllerGrip2.add(controllerModelFactory.createControllerModel(controllerGrip2));
-            scene.add(controllerGrip2);
-
-            console.log('✅ Controladores VR configurados');
+            console.log(fullMsg);
+            debugLogs.push(fullMsg);
+            
+            const debugDiv = document.getElementById('debugInfo');
+            debugDiv.innerHTML = debugLogs.slice(-20).join('<br>');
+            debugDiv.scrollTop = debugDiv.scrollHeight;
         }
 
-        setupVRControllers();
+        window.toggleDebug = function() {
+            document.getElementById('debugInfo').classList.toggle('show');
+        };
 
-        // ==================== BOTÓN VR ====================
-        function setupVRButton() {
-            const vrButton = document.getElementById('vrButton');
+        function updateStatus(type, text) {
+            const statusEl = document.getElementById('status');
+            statusEl.className = `status ${type}`;
+            statusEl.textContent = text;
+        }
 
-            // Verificar si WebXR está disponible
-            if ('xr' in navigator) {
-                console.log('✅ WebXR API disponible');
-                
-                navigator.xr.isSessionSupported('immersive-vr').then((supported) => {
-                    if (supported) {
-                        console.log('✅ VR soportado en este dispositivo');
-                        vrButton.disabled = false;
-                        vrButton.textContent = '🥽 ENTRAR A VR';
-                        
-                        vrButton.addEventListener('click', () => {
-                            console.log('🎮 Intentando entrar a VR...');
-                            
-                            // Crear sesión VR
-                            renderer.xr.getSession().then(() => {
-                                console.log('✅ Sesión VR iniciada');
-                            }).catch(() => {
-                                // Si no hay sesión, intentar iniciarla
-                                const sessionInit = {
-                                    optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking']
-                                };
-                                
-                                navigator.xr.requestSession('immersive-vr', sessionInit).then((session) => {
-                                    renderer.xr.setSession(session);
-                                    console.log('✅ Sesión VR creada y asignada');
-                                    vrButton.textContent = 'EN VR';
-                                    document.getElementById('info').style.display = 'none';
-                                }).catch((error) => {
-                                    console.error('❌ Error al crear sesión VR:', error);
-                                    alert('No se pudo iniciar VR: ' + error.message);
-                                });
-                            });
-                        });
-                    } else {
-                        console.warn('⚠️ VR no soportado en este dispositivo');
-                        vrButton.textContent = 'VR No Disponible';
-                        vrButton.disabled = true;
-                        updateStatus('error', 'VR no disponible');
-                    }
-                }).catch((error) => {
-                    console.error('❌ Error verificando soporte VR:', error);
-                    vrButton.textContent = 'Error VR';
-                    vrButton.disabled = true;
-                    updateStatus('error', 'Error al verificar VR');
+        function updateInstructions(text) {
+            document.getElementById('instructions').textContent = text;
+        }
+
+        log('Iniciando aplicación VR');
+
+        // ==================== CONFIGURACIÓN BÁSICA ====================
+        let scene, camera, renderer, splat;
+        let isVRSupported = false;
+
+        function init() {
+            log('Inicializando Three.js');
+
+            // Escena
+            scene = new Scene();
+            scene.background = new Color(0x000000);
+
+            // Cámara
+            camera = new PerspectiveCamera(
+                75,
+                window.innerWidth / window.innerHeight,
+                0.1,
+                1000
+            );
+            camera.position.set(0, 1.6, 3);
+            log('Cámara creada en posición: 0, 1.6, 3');
+
+            // Renderer
+            try {
+                renderer = new WebGLRenderer({ 
+                    antialias: true,
+                    alpha: false
                 });
-            } else {
-                console.error('❌ WebXR API no disponible');
-                vrButton.textContent = 'WebXR No Disponible';
-                vrButton.disabled = true;
-                updateStatus('error', 'WebXR no disponible');
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                document.body.appendChild(renderer.domElement);
+                log('Renderer creado');
+
+                // CRÍTICO: Habilitar XR
+                renderer.xr.enabled = true;
+                log('XR habilitado en renderer');
+
+            } catch (error) {
+                log('Error creando renderer: ' + error.message, true);
+                updateStatus('error', 'Error de WebGL');
+                return;
+            }
+
+            // Luces
+            const ambientLight = new AmbientLight(0xffffff, 0.8);
+            scene.add(ambientLight);
+
+            const directionalLight = new DirectionalLight(0xffffff, 0.5);
+            directionalLight.position.set(5, 10, 7.5);
+            scene.add(directionalLight);
+            log('Iluminación configurada');
+
+            // Cargar Splat
+            loadSplat();
+
+            // Verificar VR
+            checkVRSupport();
+
+            // Iniciar render loop
+            animate();
+
+            // Resize
+            window.addEventListener('resize', onResize);
+        }
+
+        // ==================== CARGAR SPLAT ====================
+        function loadSplat() {
+            log('Iniciando carga de Gaussian Splat');
+            
+            try {
+                splat = new LumaSplatsThree({
+                    source: 'https://lumalabs.ai/capture/d869f8b6-02be-49fe-a512-463ce9f26238',
+                    enableThreeShaderIntegration: false
+                });
+
+                scene.add(splat);
+                log('Splat añadido a la escena');
+
+                splat.onLoad = () => {
+                    log('Splat cargado exitosamente');
+                    document.getElementById('loading').style.display = 'none';
+                    updateInstructions('Splat cargado. Esperando verificación VR...');
+                };
+
+                splat.onError = (error) => {
+                    log('Error cargando splat: ' + error, true);
+                    updateStatus('error', 'Error en Splat');
+                    document.getElementById('loading').innerHTML = 
+                        '<h2 style="color: #e74c3c;">Error al cargar Splat</h2>';
+                };
+
+            } catch (error) {
+                log('Excepción al crear splat: ' + error.message, true);
             }
         }
 
-        // ==================== FUNCIONES AUXILIARES ====================
-        function updateStatus(type, text) {
-            const statusElement = document.getElementById('status');
-            statusElement.className = `status ${type}`;
-            statusElement.textContent = text;
+        // ==================== VERIFICAR SOPORTE VR ====================
+        async function checkVRSupport() {
+            log('Verificando soporte VR...');
+            
+            const vrButton = document.getElementById('vrButton');
+
+            // Método 1: Verificar API básica
+            if (!('xr' in navigator)) {
+                log('navigator.xr no disponible', true);
+                updateStatus('error', 'WebXR no disponible');
+                updateInstructions('❌ Tu navegador no soporta WebXR. Usa el Meta Browser.');
+                vrButton.textContent = 'WebXR No Disponible';
+                return;
+            }
+
+            log('navigator.xr existe');
+
+            // Método 2: Verificar sesión inmersiva
+            try {
+                log('Verificando soporte immersive-vr...');
+                
+                const supported = await navigator.xr.isSessionSupported('immersive-vr');
+                
+                log('Resultado isSessionSupported: ' + supported);
+
+                if (supported) {
+                    log('VR SOPORTADO en este dispositivo!');
+                    isVRSupported = true;
+                    updateStatus('ok', 'VR Disponible');
+                    updateInstructions('✅ VR listo. Presiona el botón para comenzar.');
+                    
+                    vrButton.disabled = false;
+                    vrButton.textContent = '🥽 ENTRAR A VR';
+                    vrButton.onclick = enterVR;
+                    
+                } else {
+                    log('VR NO soportado en este dispositivo', true);
+                    updateStatus('error', 'VR no soportado');
+                    updateInstructions('❌ Este dispositivo no soporta WebXR VR.');
+                    vrButton.textContent = 'VR No Soportado';
+                }
+
+            } catch (error) {
+                log('ERROR al verificar VR: ' + error.message, true);
+                log('Error completo: ' + JSON.stringify(error), true);
+                
+                updateStatus('error', 'Error al verificar');
+                updateInstructions('❌ Error: ' + error.message);
+                
+                // Intentar método alternativo
+                tryAlternativeVRMethod();
+            }
+        }
+
+        // ==================== MÉTODO ALTERNATIVO ====================
+        function tryAlternativeVRMethod() {
+            log('Intentando método alternativo de VR...');
+            
+            const vrButton = document.getElementById('vrButton');
+            
+            // Intentar crear sesión directamente
+            vrButton.disabled = false;
+            vrButton.textContent = '🥽 INTENTAR VR';
+            vrButton.onclick = async () => {
+                log('Usuario hizo click en INTENTAR VR');
+                
+                try {
+                    updateStatus('warning', 'Intentando...');
+                    
+                    const session = await navigator.xr.requestSession('immersive-vr', {
+                        requiredFeatures: ['local-floor'],
+                        optionalFeatures: ['bounded-floor', 'hand-tracking']
+                    });
+                    
+                    log('¡Sesión VR creada exitosamente!');
+                    await renderer.xr.setSession(session);
+                    
+                    log('Sesión asignada al renderer');
+                    updateStatus('ok', 'En VR');
+                    vrButton.textContent = 'EN VR';
+                    document.getElementById('info').style.display = 'none';
+                    
+                } catch (error) {
+                    log('Error al crear sesión VR: ' + error.message, true);
+                    updateStatus('error', 'Falló');
+                    alert('No se pudo iniciar VR:\n\n' + error.message + 
+                          '\n\nAsegúrate de:\n1. Usar HTTPS\n2. Dar permisos al navegador\n3. Usar Meta Browser');
+                }
+            };
+        }
+
+        // ==================== ENTRAR A VR ====================
+        async function enterVR() {
+            log('Usuario presionó ENTRAR A VR');
+            
+            if (!isVRSupported) {
+                log('VR no soportado, abortando', true);
+                return;
+            }
+
+            const vrButton = document.getElementById('vrButton');
+            vrButton.disabled = true;
+            vrButton.textContent = 'Iniciando VR...';
+            updateStatus('warning', 'Iniciando...');
+
+            try {
+                log('Solicitando sesión VR...');
+                
+                const sessionInit = {
+                    requiredFeatures: ['local-floor'],
+                    optionalFeatures: ['bounded-floor', 'hand-tracking', 'layers']
+                };
+
+                const session = await navigator.xr.requestSession('immersive-vr', sessionInit);
+                log('Sesión VR obtenida');
+
+                await renderer.xr.setSession(session);
+                log('Sesión asignada al renderer');
+
+                updateStatus('ok', 'En VR');
+                vrButton.textContent = 'EN VR';
+                document.getElementById('info').style.display = 'none';
+
+                // Eventos de sesión
+                session.addEventListener('end', () => {
+                    log('Sesión VR terminada');
+                    vrButton.disabled = false;
+                    vrButton.textContent = '🥽 ENTRAR A VR';
+                    updateStatus('ok', 'VR Disponible');
+                    document.getElementById('info').style.display = 'block';
+                });
+
+            } catch (error) {
+                log('ERROR al entrar a VR: ' + error.message, true);
+                
+                updateStatus('error', 'Error');
+                vrButton.disabled = false;
+                vrButton.textContent = '🥽 REINTENTAR VR';
+                
+                alert('Error al iniciar VR:\n\n' + error.message + 
+                      '\n\nPosibles soluciones:\n' +
+                      '1. Acepta los permisos cuando los pida\n' +
+                      '2. Asegúrate de usar HTTPS\n' +
+                      '3. Prueba cerrar y reabrir el navegador\n' +
+                      '4. Usa el Meta Browser oficial');
+            }
         }
 
         // ==================== ANIMACIÓN ====================
         function animate() {
-            // En VR, setAnimationLoop reemplaza requestAnimationFrame
-            renderer.setAnimationLoop(() => {
-                // Actualizar controles solo si no estamos en VR
-                if (!renderer.xr.isPresenting) {
-                    controls.update();
-                }
-
-                renderer.render(scene, camera);
-            });
+            renderer.setAnimationLoop(render);
         }
 
-        animate();
-
-        console.log('✅ Loop de animación iniciado');
+        function render() {
+            renderer.render(scene, camera);
+        }
 
         // ==================== RESIZE ====================
-        window.addEventListener('resize', () => {
+        function onResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+            log('Ventana redimensionada');
+        }
 
-        // ==================== DETECCIÓN DE SALIDA DE VR ====================
-        renderer.xr.addEventListener('sessionstart', () => {
-            console.log('🎮 Sesión VR iniciada');
-            document.getElementById('vrButton').textContent = 'EN VR - Presiona botón Quest para salir';
-        });
+        // ==================== INICIAR TODO ====================
+        try {
+            init();
+        } catch (error) {
+            log('ERROR CRÍTICO en init: ' + error.message, true);
+            updateStatus('error', 'Error crítico');
+            alert('Error crítico:\n' + error.message);
+        }
 
-        renderer.xr.addEventListener('sessionend', () => {
-            console.log('🎮 Sesión VR terminada');
-            document.getElementById('vrButton').textContent = '🥽 ENTRAR A VR';
-            document.getElementById('info').style.display = 'block';
-        });
-
-        console.log('✅ Sistema VR completamente inicializado');
     </script>
 </body>
 </html>
