@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gaussian Splat - Versión Completa</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100vh;
+        }
+
+        /* Panel de información con estilo moderno */
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            border-radius: 15px;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            max-width: 300px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        #info h2 {
+            margin: 0 0 15px 0;
+            font-size: 24px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        #info p {
+            margin: 8px 0;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .key {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-weight: bold;
+            margin: 0 3px;
+        }
+
+        /* Panel de estadísticas */
+        #stats {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 15px;
+            font-family: monospace;
+            font-size: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Botones de acción */
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* Minimapa */
+        #minimap {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 150px;
+            height: 150px;
+            background: rgba(0,0,0,0.8);
+            border-radius: 10px;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        /* Crosshair para modo FPS */
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            display: none;
+            z-index: 50;
+        }
+
+        #crosshair::before,
+        #crosshair::after {
+            content: '';
+            position: absolute;
+            background: rgba(255,255,255,0.8);
+        }
+
+        #crosshair::before {
+            width: 2px;
+            height: 20px;
+            left: 9px;
+        }
+
+        #crosshair::after {
+            width: 20px;
+            height: 2px;
+            top: 9px;
+        }
+
+        /* Mensajes temporales */
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 10px;
+            font-size: 18px;
+            display: none;
+            z-index: 200;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <h2>🎮 Controles</h2>
+        <p><span class="key">W A S D</span> - Mover</p>
+        <p><span class="key">Q E</span> - Subir/Bajar</p>
+        <p><span class="key">Shift</span> - Correr</p>
+        <p><span class="key">Mouse</span> - Rotar vista</p>
+        <p><span class="key">Click</span> - Capturar ratón</p>
+        <p><span class="key">ESC</span> - Liberar ratón</p>
+        <p><span class="key">F</span> - Modo FPS</p>
+        <p><span class="key">T</span> - Toggle texto 3D</p>
+        <p><span class="key">M</span> - Añadir modelo 3D</p>
+    </div>
+
+    <div id="stats">
+        <div>FPS: <span id="fps">60</span></div>
+        <div>Posición: <span id="position">0, 0, 0</span></div>
+        <div>Objetos: <span id="objects">0</span></div>
+        <div>Modo: <span id="mode">Exploración</span></div>
+    </div>
+
+    <div id="controls">
+        <button class="btn" onclick="toggleTexto3D()">📝 Texto 3D</button>
+        <button class="btn" onclick="agregarModelo3D()">🎲 Añadir Cubo</button>
+        <button class="btn" onclick="agregarEsfera()">⚽ Añadir Esfera</button>
+        <button class="btn" onclick="toggleLuces()">💡 Luces</button>
+        <button class="btn" onclick="resetCamera()">🎥 Reset Cámara</button>
+    </div>
+
+    <canvas id="minimap"></canvas>
+    <div id="crosshair"></div>
+    <div id="message"></div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.157.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.157.0/examples/jsm/",
+            "@lumaai/luma-web": "https://unpkg.com/@lumaai/luma-web@0.2.0/dist/library/luma-web.module.js"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import { 
+            WebGLRenderer, 
+            PerspectiveCamera, 
+            Scene,
+            BoxGeometry,
+            SphereGeometry,
+            MeshStandardMaterial,
+            MeshBasicMaterial,
+            Mesh,
+            DirectionalLight,
+            AmbientLight,
+            PointLight,
+            HemisphereLight,
+            GridHelper,
+            AxesHelper,
+            Vector3,
+            Raycaster,
+            DoubleSide,
+            TextureLoader,
+            PlaneGeometry
+        } from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+        import { LumaSplatsThree } from '@lumaai/luma-web';
+        import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+        import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+
+        // ==================== CONFIGURACIÓN INICIAL ====================
+        let canvas = document.createElement('canvas');
+        document.body.appendChild(canvas);
+        
+        let renderer = new WebGLRenderer({ 
+            canvas: canvas, 
+            antialias: true,
+            alpha: true
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+
+        let scene = new Scene();
+        
+        // Cámara principal
+        let camera = new PerspectiveCamera(
+            75, 
+            window.innerWidth / window.innerHeight, 
+            0.1, 
+            1000
+        );
+        camera.position.set(0, 1.6, 5); // Altura de una persona
+
+        // ==================== CONTROLES ====================
+        let orbitControls = new OrbitControls(camera, canvas);
+        orbitControls.enableDamping = true;
+        orbitControls.dampingFactor = 0.05;
+        orbitControls.maxPolarAngle = Math.PI; // Permitir ver hacia arriba/abajo
+
+        // Controles FPS (inicialmente desactivados)
+        let fpsControls = new PointerLockControls(camera, canvas);
+        let controlMode = 'orbit'; // 'orbit' o 'fps'
+
+        // ==================== MOVIMIENTO WASD ====================
+        let moveForward = false;
+        let moveBackward = false;
+        let moveLeft = false;
+        let moveRight = false;
+        let moveUp = false;
+        let moveDown = false;
+        let canJump = false;
+        let isRunning = false;
+
+        let velocity = new Vector3();
+        let direction = new Vector3();
+        let prevTime = performance.now();
+
+        // Velocidades
+        const WALK_SPEED = 5.0;
+        const RUN_SPEED = 10.0;
+        const FLY_SPEED = 3.0;
+
+        // ==================== TECLADO ====================
+        document.addEventListener('keydown', (event) => {
+            switch (event.code) {
+                case 'KeyW': moveForward = true; break;
+                case 'KeyS': moveBackward = true; break;
+                case 'KeyA': moveLeft = true; break;
+                case 'KeyD': moveRight = true; break;
+                case 'KeyQ': moveUp = true; break;
+                case 'KeyE': moveDown = true; break;
+                case 'ShiftLeft': isRunning = true; break;
+                
+                case 'KeyF':
+                    toggleControlMode();
+                    break;
+                case 'KeyT':
+                    toggleTexto3D();
+                    break;
+                case 'KeyM':
+                    agregarModelo3D();
+                    break;
+            }
+        });
+
+        document.addEventListener('keyup', (event) => {
+            switch (event.code) {
+                case 'KeyW': moveForward = false; break;
+                case 'KeyS': moveBackward = false; break;
+                case 'KeyA': moveLeft = false; break;
+                case 'KeyD': moveRight = false; break;
+                case 'KeyQ': moveUp = false; break;
+                case 'KeyE': moveDown = false; break;
+                case 'ShiftLeft': isRunning = false; break;
+            }
+        });
+
+        // ==================== ILUMINACIÓN ====================
+        let ambientLight = new AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+
+        let directionalLight = new DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(10, 20, 10);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.camera.far = 50;
+        directionalLight.shadow.mapSize.set(2048, 2048);
+        scene.add(directionalLight);
+
+        let hemisphereLight = new HemisphereLight(0x87ceeb, 0x545454, 0.3);
+        scene.add(hemisphereLight);
+
+        // Luces puntuales de colores (desactivadas por defecto)
+        let pointLights = [];
+        let lightColors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00];
+        let lightsEnabled = false;
+
+        function createColorLights() {
+            for (let i = 0; i < 4; i++) {
+                let light = new PointLight(lightColors[i], 1, 50);
+                let angle = (i / 4) * Math.PI * 2;
+                light.position.set(
+                    Math.cos(angle) * 8,
+                    3,
+                    Math.sin(angle) * 8
+                );
+                pointLights.push(light);
+            }
+        }
+        createColorLights();
+
+        // ==================== HELPERS ====================
+        let gridHelper = new GridHelper(50, 50, 0x888888, 0x444444);
+        scene.add(gridHelper);
+
+        let axesHelper = new AxesHelper(5);
+        scene.add(axesHelper);
+
+        // ==================== GAUSSIAN SPLAT ====================
+        let splat = new LumaSplatsThree({
+            source: 'https://lumalabs.ai/capture/ca9ea966-ca24-4ec1-ab0f-af665cb546ff',
+            enableThreeShaderIntegration: false
+        });
+        scene.add(splat);
+
+        // ==================== TEXTO 3D ====================
+        let texto3D = null;
+        let texto3DVisible = false;
+
+        function crearTexto3D() {
+            const loader = new FontLoader();
+            loader.load('https://threejs.org/examples/fonts/helvetiker_bold.typeface.json', (font) => {
+                const textGeometry = new TextGeometry('¡Hola Mundo 3D!', {
+                    font: font,
+                    size: 0.5,
+                    height: 0.1,
+                    curveSegments: 12,
+                    bevelEnabled: true,
+                    bevelThickness: 0.02,
+                    bevelSize: 0.02,
+                    bevelSegments: 5
+                });
+
+                textGeometry.center();
+
+                const materials = [
+                    new MeshStandardMaterial({ color: 0xff6b6b }), // Frente
+                    new MeshStandardMaterial({ color: 0x4ecdc4 })  // Lados
+                ];
+
+                texto3D = new Mesh(textGeometry, materials);
+                texto3D.position.set(0, 2, -2);
+                texto3D.castShadow = true;
+                texto3D.visible = false;
+                scene.add(texto3D);
+
+                mostrarMensaje('Texto 3D creado!');
+            });
+        }
+
+        crearTexto3D();
+
+        // ==================== MODELOS 3D ====================
+        let modelos3D = [];
+
+        function agregarModelo3D() {
+            const geometry = new BoxGeometry(0.5, 0.5, 0.5);
+            const material = new MeshStandardMaterial({ 
+                color: Math.random() * 0xffffff,
+                metalness: 0.3,
+                roughness: 0.4
+            });
+            const cube = new Mesh(geometry, material);
+            
+            // Posición aleatoria alrededor de la cámara
+            const distance = 3;
+            const angle = Math.random() * Math.PI * 2;
+            cube.position.set(
+                camera.position.x + Math.cos(angle) * distance,
+                camera.position.y + (Math.random() - 0.5) * 2,
+                camera.position.z + Math.sin(angle) * distance
+            );
+            
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            
+            modelos3D.push(cube);
+            scene.add(cube);
+            
+            actualizarStats();
+            mostrarMensaje('Cubo añadido! 🎲');
+        }
+
+        function agregarEsfera() {
+            const geometry = new SphereGeometry(0.3, 32, 32);
+            const material = new MeshStandardMaterial({ 
+                color: Math.random() * 0xffffff,
+                metalness: 0.8,
+                roughness: 0.2
+            });
+            const sphere = new Mesh(geometry, material);
+            
+            const distance = 3;
+            const angle = Math.random() * Math.PI * 2;
+            sphere.position.set(
+                camera.position.x + Math.cos(angle) * distance,
+                camera.position.y + (Math.random() - 0.5) * 2,
+                camera.position.z + Math.sin(angle) * distance
+            );
+            
+            sphere.castShadow = true;
+            sphere.receiveShadow = true;
+            
+            modelos3D.push(sphere);
+            scene.add(sphere);
+            
+            actualizarStats();
+            mostrarMensaje('Esfera añadida! ⚽');
+        }
+
+        // ==================== FUNCIONES UI ====================
+        window.toggleTexto3D = function() {
+            if (texto3D) {
+                texto3DVisible = !texto3DVisible;
+                texto3D.visible = texto3DVisible;
+                mostrarMensaje(texto3DVisible ? 'Texto activado 📝' : 'Texto desactivado');
+            }
+        };
+
+        window.agregarModelo3D = agregarModelo3D;
+        window.agregarEsfera = agregarEsfera;
+
+        window.toggleLuces = function() {
+            lightsEnabled = !lightsEnabled;
+            pointLights.forEach(light => {
+                if (lightsEnabled && !light.parent) {
+                    scene.add(light);
+                } else if (!lightsEnabled && light.parent) {
+                    scene.remove(light);
+                }
+            });
+            mostrarMensaje(lightsEnabled ? 'Luces de colores ON 💡' : 'Luces de colores OFF');
+        };
+
+        window.resetCamera = function() {
+            camera.position.set(0, 1.6, 5);
+            camera.lookAt(0, 0, 0);
+            orbitControls.target.set(0, 0, 0);
+            orbitControls.update();
+            mostrarMensaje('Cámara reseteada 🎥');
+        };
+
+        function toggleControlMode() {
+            if (controlMode === 'orbit') {
+                // Cambiar a FPS
+                orbitControls.enabled = false;
+                fpsControls.lock();
+                controlMode = 'fps';
+                document.getElementById('crosshair').style.display = 'block';
+                document.getElementById('mode').textContent = 'FPS';
+                mostrarMensaje('Modo FPS activado! 🎮');
+            } else {
+                // Cambiar a Orbit
+                fpsControls.unlock();
+                orbitControls.enabled = true;
+                controlMode = 'orbit';
+                document.getElementById('crosshair').style.display = 'none';
+                document.getElementById('mode').textContent = 'Exploración';
+                mostrarMensaje('Modo Exploración activado');
+            }
+        }
+
+        // Eventos de PointerLock
+        fpsControls.addEventListener('lock', () => {
+            document.getElementById('crosshair').style.display = 'block';
+        });
+
+        fpsControls.addEventListener('unlock', () => {
+            if (controlMode === 'fps') {
+                orbitControls.enabled = true;
+                controlMode = 'orbit';
+                document.getElementById('crosshair').style.display = 'none';
+                document.getElementById('mode').textContent = 'Exploración';
+            }
+        });
+
+        function mostrarMensaje(texto) {
+            const msgDiv = document.getElementById('message');
+            msgDiv.textContent = texto;
+            msgDiv.style.display = 'block';
+            setTimeout(() => {
+                msgDiv.style.display = 'none';
+            }, 2000);
+        }
+
+        // ==================== MINIMAP ====================
+        let minimapRenderer = new WebGLRenderer({ 
+            canvas: document.getElementById('minimap'),
+            alpha: true
+        });
+        minimapRenderer.setSize(150, 150);
+        
+        let minimapCamera = new PerspectiveCamera(
+            60,
+            1,
+            0.1,
+            100
+        );
+        minimapCamera.position.set(0, 20, 0);
+        minimapCamera.lookAt(0, 0, 0);
+
+        // ==================== ESTADÍSTICAS ====================
+        let frameCount = 0;
+        let lastTime = performance.now();
+
+        function actualizarStats() {
+            // FPS
+            frameCount++;
+            const currentTime = performance.now();
+            if (currentTime >= lastTime + 1000) {
+                document.getElementById('fps').textContent = frameCount;
+                frameCount = 0;
+                lastTime = currentTime;
+            }
+
+            // Posición
+            document.getElementById('position').textContent = 
+                `${camera.position.x.toFixed(1)}, ${camera.position.y.toFixed(1)}, ${camera.position.z.toFixed(1)}`;
+
+            // Objetos
+            document.getElementById('objects').textContent = scene.children.length;
+        }
+
+        // ==================== ANIMACIÓN ====================
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const time = performance.now();
+            const delta = (time - prevTime) / 1000;
+
+            // Movimiento WASD
+            if (controlMode === 'fps' || true) { // Siempre permitir WASD
+                velocity.x -= velocity.x * 10.0 * delta;
+                velocity.z -= velocity.z * 10.0 * delta;
+                velocity.y -= velocity.y * 10.0 * delta;
+
+                direction.z = Number(moveForward) - Number(moveBackward);
+                direction.x = Number(moveRight) - Number(moveLeft);
+                direction.y = Number(moveUp) - Number(moveDown);
+                direction.normalize();
+
+                const speed = isRunning ? RUN_SPEED : WALK_SPEED;
+
+                if (moveForward || moveBackward) velocity.z -= direction.z * speed * delta;
+                if (moveLeft || moveRight) velocity.x -= direction.x * speed * delta;
+                if (moveUp || moveDown) velocity.y += direction.y * FLY_SPEED * delta;
+
+                if (controlMode === 'fps') {
+                    fpsControls.moveRight(-velocity.x * delta);
+                    fpsControls.moveForward(-velocity.z * delta);
+                    camera.position.y += velocity.y * delta;
+                } else {
+                    // En modo orbit, mover la cámara y el target juntos
+                    const forward = new Vector3();
+                    camera.getWorldDirection(forward);
+                    forward.y = 0;
+                    forward.normalize();
+
+                    const right = new Vector3();
+                    right.crossVectors(camera.up, forward).normalize();
+
+                    camera.position.addScaledVector(forward, -velocity.z * delta);
+                    camera.position.addScaledVector(right, -velocity.x * delta);
+                    camera.position.y += velocity.y * delta;
+
+                    orbitControls.target.addScaledVector(forward, -velocity.z * delta);
+                    orbitControls.target.addScaledVector(right, -velocity.x * delta);
+                    orbitControls.target.y += velocity.y * delta;
+                }
+            }
+
+            prevTime = time;
+
+            // Animar objetos 3D
+            modelos3D.forEach((modelo, index) => {
+                modelo.rotation.x += 0.01;
+                modelo.rotation.y += 0.01;
+                modelo.position.y += Math.sin(time * 0.001 + index) * 0.001;
+            });
+
+            // Animar texto 3D
+            if (texto3D && texto3DVisible) {
+                texto3D.rotation.y += 0.01;
+                texto3D.position.y = 2 + Math.sin(time * 0.001) * 0.2;
+            }
+
+            // Animar luces de colores
+            if (lightsEnabled) {
+                pointLights.forEach((light, index) => {
+                    const angle = (time * 0.001) + (index / pointLights.length) * Math.PI * 2;
+                    light.position.x = Math.cos(angle) * 8;
+                    light.position.z = Math.sin(angle) * 8;
+                    light.position.y = 3 + Math.sin(time * 0.002 + index) * 2;
+                });
+            }
+
+            // Actualizar controles
+            if (controlMode === 'orbit') {
+                orbitControls.update();
+            }
+
+            // Render principal
+            renderer.render(scene, camera);
+
+            // Render minimap
+            minimapCamera.position.x = camera.position.x;
+            minimapCamera.position.z = camera.position.z;
+            minimapRenderer.render(scene, minimapCamera);
+
+            // Actualizar stats
+            actualizarStats();
+        }
+
+        animate();
+
+        // ==================== RESIZE ====================
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // ==================== INSTRUCCIONES INICIALES ====================
+        setTimeout(() => {
+            mostrarMensaje('¡Usa WASD para moverte! Presiona F para modo FPS 🎮');
+        }, 1000);
+
+    </script>
+</body>
+</html>

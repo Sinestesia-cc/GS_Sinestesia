@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Primer Gaussian Splat</title>
+    <style>
+        /* Esto hace que tu página ocupe toda la pantalla */
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100vh;
+        }
+
+        /* Un mensaje de bienvenida bonito */
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 100;
+        }
+
+        /* Mensaje de carga */
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 24px;
+            background: rgba(0,0,0,0.8);
+            padding: 20px 40px;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <h2>🎉 ¡Mi Primer Gaussian Splat!</h2>
+        <p>Usa el ratón para rotar y explorar</p>
+        <p>Scroll para acercar/alejar</p>
+    </div>
+    
+    <div id="loading">Cargando escena 3D...</div>
+    
+    <canvas></canvas>
+
+    <!-- Aquí le decimos al navegador dónde encontrar las librerías -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.157.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.157.0/examples/jsm/",
+            "@lumaai/luma-web": "https://unpkg.com/@lumaai/luma-web@0.2.0/dist/library/luma-web.module.js"
+        }
+    }
+    </script>
+
+    <!-- El código principal que hace funcionar todo -->
+    <script type="module">
+        // Importamos las herramientas que necesitamos
+        import { WebGLRenderer, PerspectiveCamera, Scene } from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { LumaSplatsThree } from '@lumaai/luma-web';
+
+        // 1. PREPARAR EL CANVAS (como preparar un lienzo para pintar)
+        let canvas = document.querySelector('canvas');
+        let renderer = new WebGLRenderer({ 
+            canvas: canvas, 
+            antialias: false 
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        // 2. CREAR LA ESCENA (como un escenario de teatro)
+        let scene = new Scene();
+
+        // 3. CREAR LA CÁMARA (tus ojos en el mundo 3D)
+        let camera = new PerspectiveCamera(
+            75,                                      // Ángulo de visión
+            window.innerWidth / window.innerHeight,  // Aspecto de pantalla
+            0.1,                                     // Qué tan cerca puedes ver
+            1000                                     // Qué tan lejos puedes ver
+        );
+        camera.position.z = 2; // Posición inicial de la cámara
+
+        // 4. CONTROLES CON EL RATÓN (para poder explorar)
+        let controls = new OrbitControls(camera, canvas);
+        controls.enableDamping = true; // Movimiento suave
+
+        // 5. ¡AQUÍ VIENE LA MAGIA! Cargar el Gaussian Splat
+        let splat = new LumaSplatsThree({
+            // Esta es una escena de ejemplo de Luma
+            // Puedes cambiar esta URL por cualquier captura de lumalabs.ai
+            source: 'https://lumalabs.ai/capture/ca9ea966-ca24-4ec1-ab0f-af665cb546ff',
+        });
+
+        // Agregamos el splat a nuestra escena
+        scene.add(splat);
+
+        // Cuando termine de cargar, ocultamos el mensaje
+        splat.onLoad = () => {
+            document.getElementById('loading').style.display = 'none';
+        };
+
+        // 6. FUNCIÓN DE ANIMACIÓN (como los fotogramas de una película)
+        function animate() {
+            requestAnimationFrame(animate); // Repetir continuamente
+            controls.update();              // Actualizar controles
+            renderer.render(scene, camera); // Dibujar todo
+        }
+
+        // ¡Comenzar la animación!
+        animate();
+
+        // 7. AJUSTAR SI CAMBIAS EL TAMAÑO DE LA VENTANA
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

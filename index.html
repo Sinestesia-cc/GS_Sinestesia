@@ -3,132 +3,242 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Primer Gaussian Splat</title>
+    <title>Mis Demos de Gaussian Splats</title>
     <style>
-        /* Esto hace que tu página ocupe toda la pantalla */
-        body {
+        * {
             margin: 0;
             padding: 0;
-            overflow: hidden;
-            font-family: Arial, sans-serif;
+            box-sizing: border-box;
         }
-        
-        canvas {
-            display: block;
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
             width: 100%;
-            height: 100vh;
         }
 
-        /* Un mensaje de bienvenida bonito */
-        #info {
-            position: absolute;
-            top: 20px;
-            left: 20px;
+        .header {
+            text-align: center;
             color: white;
-            background: rgba(0,0,0,0.7);
-            padding: 15px;
-            border-radius: 10px;
-            z-index: 100;
+            margin-bottom: 50px;
         }
 
-        /* Mensaje de carga */
-        #loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
+        .header h1 {
+            font-size: 48px;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 20px;
+            opacity: 0.9;
+        }
+
+        .demos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .demo-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .demo-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+        }
+
+        .demo-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .demo-card h2 {
+            color: #667eea;
+            margin-bottom: 15px;
             font-size: 24px;
-            background: rgba(0,0,0,0.8);
-            padding: 20px 40px;
-            border-radius: 10px;
+        }
+
+        .demo-card p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .demo-features {
+            list-style: none;
+            padding: 0;
+        }
+
+        .demo-features li {
+            padding: 8px 0;
+            color: #555;
+            font-size: 14px;
+        }
+
+        .demo-features li:before {
+            content: "✓ ";
+            color: #4ecdc4;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        .difficulty {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+
+        .difficulty.facil {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .difficulty.medio {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .difficulty.avanzado {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .difficulty.vr {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            margin-top: 40px;
+        }
+
+        .footer a {
+            color: white;
+            text-decoration: none;
+            margin: 0 10px;
+            opacity: 0.8;
+            transition: opacity 0.3s;
+        }
+
+        .footer a:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 32px;
+            }
+
+            .demos-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
-    <div id="info">
-        <h2>Test de Gaussian Splat!</h2>
-        <p>Usa el ratón para rotar y explorar</p>
-        <p>Scroll para acercar/alejar</p>
+    <div class="container">
+        <div class="header">
+            <h1>🎮 Mis Demos de Gaussian Splats</h1>
+            <p>Explora diferentes versiones y elige la que más te guste</p>
+        </div>
+
+        <div class="demos-grid">
+            <!-- Demo Básica -->
+            <a href="demo-basica.html" class="demo-card">
+                <div class="demo-icon">📱</div>
+                <h2>Demo Básica</h2>
+                <p>La versión más simple para comenzar. Perfecta para entender los fundamentos.</p>
+                <ul class="demo-features">
+                    <li>Visualización básica de Gaussian Splat</li>
+                    <li>Controles con mouse</li>
+                    <li>Rotación y zoom</li>
+                    <li>Ligera y rápida</li>
+                </ul>
+                <span class="difficulty facil">Fácil</span>
+            </a>
+
+            <!-- Demo Completa -->
+            <a href="demo-completa.html" class="demo-card">
+                <div class="demo-icon">🎮</div>
+                <h2>Demo Completa</h2>
+                <p>La versión con todas las campanas y silbatos. Experimenta con todas las funciones.</p>
+                <ul class="demo-features">
+                    <li>Movimiento WASD + Correr</li>
+                    <li>Modo FPS y Exploración</li>
+                    <li>Texto 3D flotante</li>
+                    <li>Añadir objetos 3D en tiempo real</li>
+                    <li>Luces animadas de colores</li>
+                    <li>Minimap y estadísticas</li>
+                </ul>
+                <span class="difficulty avanzado">Avanzado</span>
+            </a>
+
+            <!-- Demo VR -->
+            <a href="vr.html" class="demo-card">
+                <div class="demo-icon">🥽</div>
+                <h2>Demo VR</h2>
+                <p>Experimenta el Gaussian Splat en realidad virtual con tus Meta Quest.</p>
+                <ul class="demo-features">
+                    <li>Compatibilidad con WebXR</li>
+                    <li>Botón "Enter VR"</li>
+                    <li>Optimizado para Quest 2/3</li>
+                    <li>Visualización inmersiva</li>
+                </ul>
+                <span class="difficulty vr">VR</span>
+            </a>
+
+            <!-- Demo Objetos 3D -->
+            <a href="objetos-3d.html" class="demo-card">
+                <div class="demo-icon">🎲</div>
+                <h2>Objetos 3D Mixtos</h2>
+                <p>Combina Gaussian Splats con objetos 3D tradicionales.</p>
+                <ul class="demo-features">
+                    <li>Splats + modelos 3D</li>
+                    <li>Cubos y geometrías básicas</li>
+                    <li>Iluminación dinámica</li>
+                    <li>Animaciones</li>
+                </ul>
+                <span class="difficulty medio">Intermedio</span>
+            </a>
+        </div>
+
+        <div class="footer">
+            <p>
+                <a href="https://lumalabs.ai/" target="_blank">🔗 Luma AI</a>
+                <a href="https://threejs.org/docs/" target="_blank">📚 Three.js Docs</a>
+                <a href="https://github.com" target="_blank">💻 Mi GitHub</a>
+            </p>
+            <p style="margin-top: 20px; opacity: 0.7; font-size: 14px;">
+                Hecho con ❤️ Metaverso de la Construcción + Luma ai
+            </p>
+        </div>
     </div>
-    
-    <div id="loading">Cargando escena 3D...</div>
-    
-    <canvas></canvas>
-
-    <!-- Aquí le decimos al navegador dónde encontrar las librerías -->
-    <script type="importmap">
-    {
-        "imports": {
-            "three": "https://unpkg.com/three@0.157.0/build/three.module.js",
-            "three/addons/": "https://unpkg.com/three@0.157.0/examples/jsm/",
-            "@lumaai/luma-web": "https://unpkg.com/@lumaai/luma-web@0.2.0/dist/library/luma-web.module.js"
-        }
-    }
-    </script>
-
-    <!-- El código principal que hace funcionar todo -->
-    <script type="module">
-        // Importamos las herramientas que necesitamos
-        import { WebGLRenderer, PerspectiveCamera, Scene } from 'three';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-        import { LumaSplatsThree } from '@lumaai/luma-web';
-
-        // 1. PREPARAR EL CANVAS (como preparar un lienzo para pintar)
-        let canvas = document.querySelector('canvas');
-        let renderer = new WebGLRenderer({ 
-            canvas: canvas, 
-            antialias: false 
-        });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-
-        // 2. CREAR LA ESCENA (como un escenario de teatro)
-        let scene = new Scene();
-
-        // 3. CREAR LA CÁMARA (tus ojos en el mundo 3D)
-        let camera = new PerspectiveCamera(
-            75,                                      // Ángulo de visión
-            window.innerWidth / window.innerHeight,  // Aspecto de pantalla
-            0.1,                                     // Qué tan cerca puedes ver
-            1000                                     // Qué tan lejos puedes ver
-        );
-        camera.position.z = 2; // Posición inicial de la cámara
-
-        // 4. CONTROLES CON EL RATÓN (para poder explorar)
-        let controls = new OrbitControls(camera, canvas);
-        controls.enableDamping = true; // Movimiento suave
-
-        // 5. ¡AQUÍ VIENE LA MAGIA! Cargar el Gaussian Splat
-        let splat = new LumaSplatsThree({
-            // Esta es una escena de ejemplo de Luma
-            // Puedes cambiar esta URL por cualquier captura de lumalabs.ai
-            source: 'https://lumalabs.ai/capture/D869F8B6-02BE-49FE-A512-463CE9F26238?mode=sparkles',
-        });
-
-        // Agregamos el splat a nuestra escena
-        scene.add(splat);
-
-        // Cuando termine de cargar, ocultamos el mensaje
-        splat.onLoad = () => {
-            document.getElementById('loading').style.display = 'none';
-        };
-
-        // 6. FUNCIÓN DE ANIMACIÓN (como los fotogramas de una película)
-        function animate() {
-            requestAnimationFrame(animate); // Repetir continuamente
-            controls.update();              // Actualizar controles
-            renderer.render(scene, camera); // Dibujar todo
-        }
-
-        // ¡Comenzar la animación!
-        animate();
-
-        // 7. AJUSTAR SI CAMBIAS EL TAMAÑO DE LA VENTANA
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-    </script>
 </body>
 </html>
