@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gaussian Splat - Demo Completa [FIXED]</title>
+    <title>Gaussian Splat - Sinestésicos</title>
     <style>
         body {
             margin: 0;
@@ -129,16 +129,47 @@
             display: none;
             z-index: 200;
         }
+
+        #modeIndicator {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            backdrop-filter: blur(10px);
+            z-index: 101;
+        }
+
+        .mode-mouse {
+            color: #4ecdc4;
+        }
+
+        .mode-wasd {
+            color: #f39c12;
+        }
     </style>
 </head>
 <body>
+    <div id="modeIndicator">
+        <span id="modeText">Modo: <span class="mode-wasd">WASD</span></span>
+    </div>
+
     <div id="info">
         <h2>🎮 Controles</h2>
+        <p><strong>Modo WASD:</strong></p>
         <p><span class="key">W A S D</span> - Mover</p>
         <p><span class="key">Q E</span> - Subir/Bajar</p>
         <p><span class="key">Shift</span> - Correr (2x)</p>
-        <p><span class="key">Mouse Drag</span> - Rotar</p>
+        <p style="margin-top: 15px;"><strong>Modo Mouse:</strong></p>
+        <p><span class="key">Click + Drag</span> - Rotar</p>
         <p><span class="key">Scroll</span> - Zoom</p>
+        <p style="margin-top: 15px; font-size: 12px; opacity: 0.7;">
+            💡 El modo cambia automáticamente
+        </p>
         <p><span class="key">T</span> - Texto 3D</p>
         <p><span class="key">M</span> - Añadir cubo</p>
     </div>
@@ -146,7 +177,7 @@
     <div id="stats">
         <div>FPS: <span id="fps">60</span></div>
         <div>Pos: <span id="position">0, 0, 0</span></div>
-        <div>Objetos: <span id="objects">0</span></div>
+        <div>Obj: <span id="objects">0</span></div>
         <div>Vel: <span id="speed">Normal</span></div>
     </div>
 
@@ -184,8 +215,7 @@
             AmbientLight,
             PointLight,
             HemisphereLight,
-            Vector3,
-            Euler
+            Vector3
         } from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { LumaSplatsThree } from '@lumaai/luma-web';
@@ -215,15 +245,39 @@
         );
         camera.position.set(0, 1.6, 5);
 
+        // ==================== SISTEMA DE MODOS ====================
+        let currentMode = 'wasd'; // 'wasd' o 'mouse'
+        let isMouseDragging = false;
+
+        function setMode(mode) {
+            currentMode = mode;
+            const modeText = document.getElementById('modeText');
+            if (mode === 'mouse') {
+                modeText.innerHTML = 'Modo: <span class="mode-mouse">MOUSE (arrastrando)</span>';
+            } else {
+                modeText.innerHTML = 'Modo: <span class="mode-wasd">WASD</span>';
+            }
+        }
+
         // ==================== CONTROLES ORBIT ====================
         let controls = new OrbitControls(camera, canvas);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
         controls.maxPolarAngle = Math.PI;
-        // 🔑 CLAVE: Solo permitir rotación, NO movimiento
-        controls.enablePan = false; // Deshabilitar paneo
+        controls.enablePan = false;
 
-        // ==================== SISTEMA DE MOVIMIENTO INDEPENDIENTE ====================
+        // 🔑 DETECTAR CUANDO EL USUARIO ESTÁ ARRASTRANDO
+        controls.addEventListener('start', () => {
+            isMouseDragging = true;
+            setMode('mouse');
+        });
+
+        controls.addEventListener('end', () => {
+            isMouseDragging = false;
+            setMode('wasd');
+        });
+
+        // ==================== SISTEMA DE MOVIMIENTO WASD ====================
         let moveState = {
             forward: false,
             backward: false,
@@ -273,32 +327,32 @@
 
         // ==================== FUNCIÓN DE MOVIMIENTO WASD ====================
         function updateMovement(delta) {
-            // Si no hay teclas presionadas, no hacer nada
+            // 🔑 CLAVE: SOLO mover si NO estamos arrastrando con el mouse
+            if (isMouseDragging) {
+                return; // ← ESTO SOLUCIONA EL PARPADEO
+            }
+
             const isMoving = moveState.forward || moveState.backward || 
                            moveState.left || moveState.right || 
                            moveState.up || moveState.down;
             
             if (!isMoving) return;
 
-            // Velocidad base
             const speed = moveState.running ? RUN_SPEED : WALK_SPEED;
             const moveDistance = speed * delta;
             const flyDistance = FLY_SPEED * delta;
 
-            // 🔑 OBTENER DIRECCIÓN DE LA CÁMARA (a dónde mira)
+            // Obtener dirección de la cámara
             const cameraDirection = new Vector3();
             camera.getWorldDirection(cameraDirection);
-            
-            // Proyectar al plano horizontal (ignorar Y)
             cameraDirection.y = 0;
             cameraDirection.normalize();
 
-            // Vector derecho (perpendicular a la dirección)
             const rightVector = new Vector3();
             rightVector.crossVectors(camera.up, cameraDirection);
             rightVector.normalize();
 
-            // 🔧 MOVIMIENTO CORREGIDO (direcciones correctas)
+            // Movimiento
             if (moveState.forward) {
                 camera.position.addScaledVector(cameraDirection, moveDistance);
                 controls.target.addScaledVector(cameraDirection, moveDistance);
@@ -374,7 +428,7 @@
         function crearTexto3D() {
             const loader = new FontLoader();
             loader.load('https://threejs.org/examples/fonts/helvetiker_bold.typeface.json', (font) => {
-                const textGeometry = new TextGeometry('Hola, Sinestesia!', {
+                const textGeometry = new TextGeometry('Hola, Sinestesicos!', {
                     font: font,
                     size: 0.5,
                     height: 0.1,
@@ -393,7 +447,7 @@
                 ];
 
                 texto3D = new Mesh(textGeometry, materials);
-                texto3D.position.set(20, 60, -0);
+                texto3D.position.set(0, 2, -2);
                 texto3D.castShadow = true;
                 texto3D.visible = false;
                 scene.add(texto3D);
@@ -530,7 +584,7 @@
             document.getElementById('objects').textContent = scene.children.length;
         }
 
-        // ==================== ANIMACIÓN - COMPLETAMENTE REESCRITA ====================
+        // ==================== ANIMACIÓN ====================
         function animate() {
             requestAnimationFrame(animate);
 
@@ -538,23 +592,21 @@
             const delta = (time - prevTime) / 1000;
             prevTime = time;
 
-            // 1️⃣ PRIMERO: Actualizar movimiento WASD
+            // 1️⃣ Actualizar movimiento WASD (solo si NO está arrastrando)
             updateMovement(delta);
 
-            // 2️⃣ SEGUNDO: Animar objetos 3D
+            // 2️⃣ Animar objetos 3D
             modelos3D.forEach((modelo, index) => {
                 modelo.rotation.x += 0.01;
                 modelo.rotation.y += 0.01;
                 modelo.position.y += Math.sin(time * 0.001 + index) * 0.001;
             });
 
-            // Animar texto 3D
             if (texto3D && texto3DVisible) {
-                texto3D.rotation.y += 0.0;
+                texto3D.rotation.y += 0.01;
                 texto3D.position.y = 2 + Math.sin(time * 0.001) * 0.2;
             }
 
-            // Animar luces de colores
             if (lightsEnabled) {
                 pointLights.forEach((light, index) => {
                     const angle = (time * 0.001) + (index / pointLights.length) * Math.PI * 2;
@@ -564,10 +616,10 @@
                 });
             }
 
-            // 3️⃣ TERCERO: Actualizar OrbitControls (solo para rotación)
+            // 3️⃣ Actualizar OrbitControls
             controls.update();
 
-            // 4️⃣ CUARTO: Renderizar
+            // 4️⃣ Renderizar
             renderer.render(scene, camera);
 
             // Minimap
@@ -575,7 +627,6 @@
             minimapCamera.position.z = camera.position.z;
             minimapRenderer.render(scene, minimapCamera);
 
-            // Stats
             actualizarStats();
         }
 
@@ -589,7 +640,7 @@
         });
 
         setTimeout(() => {
-            mostrarMensaje('¡WASD para moverte! Mouse para rotar 🎮');
+            mostrarMensaje('¡WASD para moverte! Click+Drag para rotar 🎮');
         }, 1000);
 
     </script>
