@@ -3,285 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- ⭐ CRÍTICO: Permissions Policy para WebXR -->
-    <meta http-equiv="Permissions-Policy" content="xr-spatial-tracking=(self), camera=(self), microphone=(self)">
-    <meta http-equiv="Feature-Policy" content="xr-spatial-tracking 'self'; camera 'self'; microphone 'self'">
-    
-    <!-- Meta tags adicionales para VR -->
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    
-    <title>VR Splat - Meta Quest 3S [FIXED]</title>
+    <title>VR Splat - Simple</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
             margin: 0;
-            overflow: hidden;
             background: #000;
-            font-family: Arial, sans-serif;
-            color: white;
+            overflow: hidden;
         }
-
-        #statusPanel {
+        
+        #info {
             position: fixed;
             top: 20px;
             left: 20px;
             right: 20px;
-            background: rgba(0,0,0,0.95);
+            background: rgba(0,0,0,0.9);
+            color: white;
             padding: 20px;
-            border-radius: 15px;
-            border: 2px solid #667eea;
-            z-index: 1000;
-            max-width: 500px;
-        }
-
-        #statusPanel h2 {
-            color: #4ecdc4;
-            margin-bottom: 15px;
-            font-size: 24px;
-        }
-
-        .status-item {
-            margin: 10px 0;
-            padding: 10px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 8px;
-        }
-
-        .status-label {
-            font-weight: bold;
-            color: #667eea;
-            display: inline-block;
-            width: 150px;
-        }
-
-        .status-value {
-            color: #fff;
-        }
-
-        .status-icon {
-            font-size: 20px;
-            margin-right: 10px;
-        }
-
-        #debugLogs {
-            position: fixed;
-            bottom: 180px;
-            left: 20px;
-            right: 20px;
-            background: rgba(0,0,0,0.95);
-            padding: 15px;
             border-radius: 10px;
-            border: 2px solid #0f0;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            max-height: 250px;
-            overflow-y: auto;
-            z-index: 999;
+            font-family: Arial, sans-serif;
+            z-index: 1000;
+        }
+        
+        #info h2 {
+            color: #4ecdc4;
+            margin: 0 0 15px 0;
+        }
+        
+        #info p {
+            margin: 10px 0;
             line-height: 1.6;
         }
-
-        .log-entry {
-            margin: 3px 0;
-            padding: 3px 5px;
-        }
-
-        .log-success {
-            color: #2ecc71;
-        }
-
-        .log-error {
-            color: #e74c3c;
-            font-weight: bold;
-        }
-
-        .log-warning {
-            color: #f39c12;
-        }
-
-        .log-info {
-            color: #3498db;
-        }
-
-        .button-container {
+        
+        #vrButton {
             position: fixed;
-            bottom: 20px;
-            left: 20px;
-            right: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            z-index: 1001;
-        }
-
-        .btn {
-            padding: 20px;
-            font-size: 18px;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 25px 50px;
+            font-size: 22px;
             font-weight: bold;
             color: white;
-            border: none;
-            border-radius: 15px;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-        }
-
-        .btn-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            font-size: 22px;
-            padding: 25px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 1001;
         }
-
-        .btn-primary:disabled {
-            background: #555;
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
-
-        .btn-primary:not(:disabled):active {
-            transform: scale(0.98);
-        }
-
-        .btn-secondary {
-            background: rgba(255,255,255,0.1);
-            border: 2px solid rgba(255,255,255,0.3);
-            font-size: 16px;
-        }
-
-        .btn-success {
-            background: #2ecc71;
-        }
-
-        .btn-danger {
-            background: #e74c3c;
-        }
-
-        .btn-warning {
-            background: #f39c12;
-        }
-
-        .spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255,255,255,0.3);
-            border-top: 3px solid white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 10px;
-            vertical-align: middle;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        #loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.9);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-        }
-
-        .loading-content {
-            text-align: center;
-        }
-
-        .big-spinner {
-            width: 60px;
-            height: 60px;
-            border: 6px solid rgba(255,255,255,0.3);
-            border-top: 6px solid white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
+        
+        #vrButton:disabled {
+            opacity: 0.5;
+            background: #666;
         }
     </style>
 </head>
 <body>
-    <div id="loading-overlay">
-        <div class="loading-content">
-            <div class="big-spinner"></div>
-            <h2>Iniciando Sistema VR...</h2>
-            <p style="margin-top: 10px; opacity: 0.7;">Con permisos WebXR habilitados</p>
-        </div>
+    <div id="info">
+        <h2>🥽 Gaussian Splat VR</h2>
+        <p><strong>Estado:</strong> <span id="status">Cargando...</span></p>
+        <p>Presiona el botón "ENTRAR VR" cuando esté listo</p>
+        <p style="font-size: 14px; opacity: 0.7; margin-top: 15px;">
+            Tip: Si no funciona, prueba usando el botón VR nativo del navegador que aparecerá abajo a la derecha
+        </p>
     </div>
 
-    <div id="statusPanel">
-        <h2>🥽 Estado del Sistema VR</h2>
-        
-        <div class="status-item">
-            <span class="status-label">WebXR API:</span>
-            <span class="status-value" id="webxrStatus">
-                <span class="spinner"></span>Verificando...
-            </span>
-        </div>
-
-        <div class="status-item">
-            <span class="status-label">Permisos XR:</span>
-            <span class="status-value" id="permissionsStatus">
-                <span class="spinner"></span>Verificando...
-            </span>
-        </div>
-
-        <div class="status-item">
-            <span class="status-label">Soporte VR:</span>
-            <span class="status-value" id="vrStatus">
-                <span class="spinner"></span>Verificando...
-            </span>
-        </div>
-
-        <div class="status-item">
-            <span class="status-label">Gaussian Splat:</span>
-            <span class="status-value" id="splatStatus">
-                <span class="spinner"></span>Cargando...
-            </span>
-        </div>
-
-        <div class="status-item">
-            <span class="status-label">Navegador:</span>
-            <span class="status-value" id="browserInfo">Detectando...</span>
-        </div>
-    </div>
-
-    <div id="debugLogs">
-        <div style="color: #4ecdc4; font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #0f0; padding-bottom: 5px;">
-            📋 DEBUG LOG (últimas 15 líneas)
-        </div>
-        <div id="logContent"></div>
-    </div>
-
-    <div class="button-container">
-        <button id="vrButton" class="btn btn-primary" disabled>
-            <span class="spinner"></span>Iniciando...
-        </button>
-
-        <div style="display: flex; gap: 10px;">
-            <button id="reloadBtn" class="btn btn-secondary" onclick="location.reload()" style="flex: 1;">
-                🔄 Recargar Página
-            </button>
-            <button id="copyLogsBtn" class="btn btn-secondary" onclick="copyLogs()" style="flex: 1;">
-                📋 Copiar Logs
-            </button>
-        </div>
-    </div>
-
-    <!-- ⭐ NUEVO: Iframe invisible para forzar permisos -->
-    <iframe allow="xr-spatial-tracking; camera; microphone" style="display:none;"></iframe>
+    <button id="vrButton" disabled>Cargando...</button>
 
     <script type="importmap">
     {
@@ -302,327 +88,91 @@
             DirectionalLight,
             Color
         } from 'three';
+        import { VRButton } from 'three/addons/webxr/VRButton.js';
         import { LumaSplatsThree } from '@lumaai/luma-web';
 
-        const logs = [];
-        const MAX_LOGS = 15;
+        console.log('Iniciando VR simple');
 
-        function addLog(message, type = 'info') {
-            const timestamp = new Date().toLocaleTimeString();
-            const icons = {
-                success: '✅',
-                error: '❌',
-                warning: '⚠️',
-                info: 'ℹ️'
-            };
+        // Configuración básica
+        const scene = new Scene();
+        scene.background = new Color(0x000000);
 
-            const logEntry = {
-                time: timestamp,
-                message: message,
-                type: type,
-                icon: icons[type] || 'ℹ️'
-            };
+        const camera = new PerspectiveCamera(
+            75,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            1000
+        );
+        camera.position.set(0, 1.6, 3);
 
-            logs.push(logEntry);
-            console.log(`[${timestamp}] ${logEntry.icon} ${message}`);
+        const renderer = new WebGLRenderer({ antialias: true });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.xr.enabled = true;
+        document.body.appendChild(renderer.domElement);
 
-            if (logs.length > MAX_LOGS) {
-                logs.shift();
-            }
+        console.log('Renderer creado');
 
-            updateLogDisplay();
-        }
+        // Luces
+        scene.add(new AmbientLight(0xffffff, 0.8));
+        const light = new DirectionalLight(0xffffff, 0.5);
+        light.position.set(5, 10, 7.5);
+        scene.add(light);
 
-        function updateLogDisplay() {
-            const logContent = document.getElementById('logContent');
-            logContent.innerHTML = logs.map(log => 
-                `<div class="log-entry log-${log.type}">[${log.time}] ${log.icon} ${log.message}</div>`
-            ).join('');
-            logContent.scrollTop = logContent.scrollHeight;
-        }
+        // Cargar Splat
+        console.log('Cargando splat...');
+        const splat = new LumaSplatsThree({
+            source: 'https://lumalabs.ai/capture/d869f8b6-02be-49fe-a512-463ce9f26238',
+            enableThreeShaderIntegration: false
+        });
+        scene.add(splat);
 
-        function updateStatus(elementId, text, isSuccess = null) {
-            const element = document.getElementById(elementId);
-            if (isSuccess === true) {
-                element.innerHTML = `<span class="status-icon">✅</span>${text}`;
-                element.style.color = '#2ecc71';
-            } else if (isSuccess === false) {
-                element.innerHTML = `<span class="status-icon">❌</span>${text}`;
-                element.style.color = '#e74c3c';
-            } else {
-                element.innerHTML = `<span class="status-icon">⚠️</span>${text}`;
-                element.style.color = '#f39c12';
-            }
-        }
-
-        window.copyLogs = function() {
-            const logText = logs.map(log => `[${log.time}] ${log.icon} ${log.message}`).join('\n');
-            navigator.clipboard.writeText(logText).then(() => {
-                alert('Logs copiados al portapapeles');
-            }).catch(() => {
-                alert('No se pudieron copiar los logs');
-            });
+        splat.onLoad = () => {
+            console.log('Splat cargado');
+            document.getElementById('status').textContent = '✅ Listo para VR';
+            setupVR();
         };
 
-        let scene, camera, renderer, splat;
-        let vrButton = document.getElementById('vrButton');
+        splat.onError = (error) => {
+            console.error('Error:', error);
+            document.getElementById('status').textContent = '❌ Error al cargar splat';
+        };
 
-        function detectBrowser() {
-            const ua = navigator.userAgent;
-            let browser = 'Desconocido';
+        // Configurar VR - MÉTODO SIMPLE
+        function setupVR() {
+            console.log('Configurando VR');
             
-            if (ua.includes('OculusBrowser')) browser = 'Meta Browser (Oculus) ✅';
-            else if (ua.includes('Quest')) browser = 'Quest Browser ✅';
-            else if (ua.includes('Chrome')) browser = 'Chrome ⚠️';
-            else if (ua.includes('Firefox')) browser = 'Firefox ⚠️';
-            else if (ua.includes('Safari')) browser = 'Safari ❌';
-
-            document.getElementById('browserInfo').textContent = browser;
-            addLog(`Navegador detectado: ${browser}`, 'info');
-
-            if (!ua.includes('Quest') && !ua.includes('Oculus')) {
-                addLog('ADVERTENCIA: No parece ser Meta Browser oficial', 'warning');
-            }
+            const myButton = document.getElementById('vrButton');
+            
+            // Usar el botón VR oficial de Three.js
+            const threeVRButton = VRButton.createButton(renderer);
+            threeVRButton.style.bottom = '100px'; // Moverlo arriba de nuestro botón
+            document.body.appendChild(threeVRButton);
+            
+            // Nuestro botón hace lo mismo
+            myButton.disabled = false;
+            myButton.textContent = '🥽 ENTRAR VR';
+            
+            myButton.onclick = () => {
+                console.log('Click en botón VR');
+                // Simular click en el botón oficial de Three.js
+                threeVRButton.click();
+            };
         }
 
-        // ⭐ VERIFICAR PERMISOS
-        async function checkPermissions() {
-            addLog('🔐 Verificando Permissions Policy', 'info');
-            
-            try {
-                // Intentar acceder a la API de permisos
-                if ('permissions' in navigator && 'query' in navigator.permissions) {
-                    addLog('✓ API de permisos disponible', 'success');
-                    updateStatus('permissionsStatus', 'API disponible', true);
-                } else {
-                    addLog('⚠️ API de permisos no disponible (normal en Quest)', 'warning');
-                    updateStatus('permissionsStatus', 'No necesario', null);
-                }
-            } catch (error) {
-                addLog(`Permisos: ${error.message}`, 'info');
-            }
-        }
-
-        async function init() {
-            addLog('🚀 Iniciando aplicación VR [CON PERMISOS]', 'info');
-            detectBrowser();
-            await checkPermissions();
-
-            if (location.protocol !== 'https:') {
-                addLog('ERROR: La página NO está en HTTPS', 'error');
-                updateStatus('webxrStatus', 'Requiere HTTPS', false);
-                vrButton.textContent = '❌ ERROR: Requiere HTTPS';
-                vrButton.classList.remove('btn-primary');
-                vrButton.classList.add('btn-danger');
-                return;
-            } else {
-                addLog('✓ Página servida por HTTPS', 'success');
-            }
-
-            try {
-                addLog('Creando escena Three.js', 'info');
-                scene = new Scene();
-                scene.background = new Color(0x000000);
-                addLog('✓ Escena creada', 'success');
-            } catch (error) {
-                addLog(`ERROR creando escena: ${error.message}`, 'error');
-                return;
-            }
-
-            try {
-                camera = new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-                camera.position.set(0, 1.6, 3);
-                addLog('✓ Cámara configurada', 'success');
-            } catch (error) {
-                addLog(`ERROR creando cámara: ${error.message}`, 'error');
-                return;
-            }
-
-            try {
-                addLog('Creando WebGL Renderer', 'info');
-                renderer = new WebGLRenderer({ antialias: true, alpha: false });
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-                document.body.appendChild(renderer.domElement);
-                addLog('✓ Renderer creado', 'success');
-
-                renderer.xr.enabled = true;
-                addLog('✓ WebXR habilitado en renderer', 'success');
-
-            } catch (error) {
-                addLog(`ERROR creando renderer: ${error.message}`, 'error');
-                updateStatus('webxrStatus', 'Error WebGL', false);
-                return;
-            }
-
-            scene.add(new AmbientLight(0xffffff, 0.8));
-            scene.add(new DirectionalLight(0xffffff, 0.5));
-            addLog('✓ Iluminación configurada', 'success');
-
-            loadSplat();
-            await checkWebXR();
-
-            renderer.setAnimationLoop(render);
-            addLog('✓ Loop de renderizado iniciado', 'success');
-
-            window.addEventListener('resize', onResize);
-        }
-
-        function loadSplat() {
-            addLog('📥 Iniciando carga de Gaussian Splat', 'info');
-            
-            try {
-                splat = new LumaSplatsThree({
-                    source: 'https://lumalabs.ai/capture/d869f8b6-02be-49fe-a512-463ce9f26238',
-                    enableThreeShaderIntegration: false
-                });
-
-                scene.add(splat);
-                addLog('✓ Splat añadido a escena', 'success');
-
-                splat.onLoad = () => {
-                    addLog('✓ ¡Splat cargado completamente!', 'success');
-                    updateStatus('splatStatus', 'Cargado', true);
-                    document.getElementById('loading-overlay').style.display = 'none';
-                };
-
-                splat.onError = (error) => {
-                    addLog(`ERROR cargando splat: ${error}`, 'error');
-                    updateStatus('splatStatus', 'Error al cargar', false);
-                    document.getElementById('loading-overlay').style.display = 'none';
-                };
-
-            } catch (error) {
-                addLog(`ERROR al crear splat: ${error.message}`, 'error');
-                updateStatus('splatStatus', 'Error', false);
-            }
-        }
-
-        async function checkWebXR() {
-            addLog('🔍 Verificando WebXR API', 'info');
-
-            if (!('xr' in navigator)) {
-                addLog('ERROR: navigator.xr NO existe', 'error');
-                updateStatus('webxrStatus', 'No disponible', false);
-                updateStatus('vrStatus', 'No soportado', false);
-                
-                vrButton.textContent = '❌ WebXR No Disponible';
-                vrButton.classList.remove('btn-primary');
-                vrButton.classList.add('btn-danger');
-                
-                addLog('SOLUCIÓN: Usa Meta Browser oficial del Quest', 'warning');
-                return;
-            }
-
-            addLog('✓ navigator.xr existe', 'success');
-            updateStatus('webxrStatus', 'Disponible', true);
-
-            // ⭐ MÉTODO DIRECTO - Sin verificar primero
-            addLog('⚡ Usando método directo (sin pre-verificación)', 'warning');
-            addLog('Esto evita el error de Permissions Policy', 'info');
-            
-            updateStatus('vrStatus', 'Listo para intentar', null);
-            
-            vrButton.disabled = false;
-            vrButton.textContent = '🥽 ENTRAR A VR (Click para activar)';
-            vrButton.classList.remove('btn-primary');
-            vrButton.classList.add('btn-success');
-            vrButton.onclick = enterVRDirect;
-        }
-
-        // ⭐ ENTRADA VR DIRECTA (sin isSessionSupported)
-        async function enterVRDirect() {
-            addLog('👆 Usuario presionó ENTRAR A VR', 'info');
-            addLog('🚀 Solicitando sesión VR directamente...', 'warning');
-            
-            vrButton.disabled = true;
-            vrButton.innerHTML = '<span class="spinner"></span>Solicitando VR...';
-
-            try {
-                const sessionInit = {
-                    requiredFeatures: ['local-floor'],
-                    optionalFeatures: ['bounded-floor', 'hand-tracking']
-                };
-
-                addLog('Creando sesión immersive-vr con permisos...', 'info');
-                
-                const session = await navigator.xr.requestSession('immersive-vr', sessionInit);
-                addLog('✓ ¡SESIÓN VR OBTENIDA!', 'success');
-
-                await renderer.xr.setSession(session);
-                addLog('✓ Sesión asignada al renderer', 'success');
-                
-                updateStatus('vrStatus', 'EN VR', true);
-                vrButton.textContent = '✅ EN VR - Presiona botón Quest para salir';
-                vrButton.classList.remove('btn-success');
-                vrButton.classList.add('btn-primary');
-                
-                document.getElementById('statusPanel').style.display = 'none';
-                document.getElementById('debugLogs').style.display = 'none';
-
-                session.addEventListener('end', () => {
-                    addLog('Sesión VR terminada', 'info');
-                    vrButton.disabled = false;
-                    vrButton.textContent = '🥽 ENTRAR A VR';
-                    vrButton.classList.remove('btn-primary');
-                    vrButton.classList.add('btn-success');
-                    document.getElementById('statusPanel').style.display = 'block';
-                    document.getElementById('debugLogs').style.display = 'block';
-                });
-
-            } catch (error) {
-                addLog(`ERROR: ${error.message}`, 'error');
-                addLog(`Tipo de error: ${error.name}`, 'error');
-                
-                updateStatus('vrStatus', 'Error', false);
-                vrButton.disabled = false;
-                vrButton.textContent = '🥽 REINTENTAR VR';
-                
-                // Analizar el error
-                if (error.name === 'SecurityError') {
-                    addLog('❌ SecurityError: Problema de permisos', 'error');
-                    alert('ERROR DE PERMISOS\n\n' +
-                          'El navegador bloqueó el acceso a VR.\n\n' +
-                          'Soluciones:\n' +
-                          '1. Recarga la página (botón 🔄)\n' +
-                          '2. Limpia caché del navegador\n' +
-                          '3. Reinicia el Meta Browser\n' +
-                          '4. Reinicia el Quest\n\n' +
-                          'Detalles técnicos:\n' + error.message);
-                } else if (error.name === 'NotSupportedError') {
-                    addLog('❌ NotSupportedError: VR no soportado', 'error');
-                    alert('VR NO SOPORTADO\n\n' +
-                          'Este dispositivo o navegador no soporta WebXR.\n\n' +
-                          'Verifica:\n' +
-                          '1. Estás usando Meta Quest 3S\n' +
-                          '2. Estás en Meta Browser\n' +
-                          '3. El Quest está actualizado');
-                } else {
-                    alert(`Error al iniciar VR:\n\n${error.name}\n${error.message}\n\n` +
-                          `Soluciones:\n` +
-                          `1. Acepta los permisos cuando aparezcan\n` +
-                          `2. Recarga la página\n` +
-                          `3. Reinicia el navegador`);
-                }
-            }
-        }
-
-        function render() {
+        // Animación
+        renderer.setAnimationLoop(() => {
             renderer.render(scene, camera);
-        }
+        });
 
-        function onResize() {
+        // Resize
+        window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-        }
+        });
 
-        try {
-            init();
-        } catch (error) {
-            addLog(`ERROR CRÍTICO: ${error.message}`, 'error');
-            alert('Error crítico al iniciar. Revisa los logs.');
-        }
+        console.log('Sistema iniciado');
     </script>
 </body>
 </html>
