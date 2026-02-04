@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gaussian Splat - Demo Completa [SIN PARPADEO]</title>
+    <title>Gaussian Splat - Demo Completa [FIXED]</title>
     <style>
         body {
             margin: 0;
@@ -137,16 +137,17 @@
         <p><span class="key">W A S D</span> - Mover</p>
         <p><span class="key">Q E</span> - Subir/Bajar</p>
         <p><span class="key">Shift</span> - Correr (2x)</p>
-        <p><span class="key">Mouse</span> - Rotar vista</p>
+        <p><span class="key">Mouse Drag</span> - Rotar</p>
+        <p><span class="key">Scroll</span> - Zoom</p>
         <p><span class="key">T</span> - Texto 3D</p>
         <p><span class="key">M</span> - Añadir cubo</p>
     </div>
 
     <div id="stats">
         <div>FPS: <span id="fps">60</span></div>
-        <div>Posición: <span id="position">0, 0, 0</span></div>
+        <div>Pos: <span id="position">0, 0, 0</span></div>
         <div>Objetos: <span id="objects">0</span></div>
-        <div>Velocidad: <span id="speed">Normal</span></div>
+        <div>Vel: <span id="speed">Normal</span></div>
     </div>
 
     <div id="controls">
@@ -183,7 +184,8 @@
             AmbientLight,
             PointLight,
             HemisphereLight,
-            Vector3
+            Vector3,
+            Euler
         } from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { LumaSplatsThree } from '@lumaai/luma-web';
@@ -213,24 +215,24 @@
         );
         camera.position.set(0, 1.6, 5);
 
-        // ==================== CONTROLES - SOLO ORBIT ====================
+        // ==================== CONTROLES ORBIT ====================
         let controls = new OrbitControls(camera, canvas);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
         controls.maxPolarAngle = Math.PI;
+        // 🔑 CLAVE: Solo permitir rotación, NO movimiento
+        controls.enablePan = false; // Deshabilitar paneo
 
-        // ==================== MOVIMIENTO WASD ====================
-        let moveForward = false;
-        let moveBackward = false;
-        let moveLeft = false;
-        let moveRight = false;
-        let moveUp = false;
-        let moveDown = false;
-        let isRunning = false;
-
-        let velocity = new Vector3();
-        let direction = new Vector3();
-        let prevTime = performance.now();
+        // ==================== SISTEMA DE MOVIMIENTO INDEPENDIENTE ====================
+        let moveState = {
+            forward: false,
+            backward: false,
+            left: false,
+            right: false,
+            up: false,
+            down: false,
+            running: false
+        };
 
         const WALK_SPEED = 15.0;
         const RUN_SPEED = 30.0;
@@ -239,39 +241,89 @@
         // ==================== TECLADO ====================
         document.addEventListener('keydown', (event) => {
             switch (event.code) {
-                case 'KeyW': moveForward = true; break;
-                case 'KeyS': moveBackward = true; break;
-                case 'KeyA': moveLeft = true; break;
-                case 'KeyD': moveRight = true; break;
-                case 'KeyQ': moveUp = true; break;
-                case 'KeyE': moveDown = true; break;
+                case 'KeyW': moveState.forward = true; break;
+                case 'KeyS': moveState.backward = true; break;
+                case 'KeyA': moveState.left = true; break;
+                case 'KeyD': moveState.right = true; break;
+                case 'KeyQ': moveState.up = true; break;
+                case 'KeyE': moveState.down = true; break;
                 case 'ShiftLeft': 
-                    isRunning = true;
+                    moveState.running = true;
                     document.getElementById('speed').textContent = 'Corriendo 🏃';
                     break;
-                case 'KeyT':
-                    toggleTexto3D();
-                    break;
-                case 'KeyM':
-                    agregarModelo3D();
-                    break;
+                case 'KeyT': toggleTexto3D(); break;
+                case 'KeyM': agregarModelo3D(); break;
             }
         });
 
         document.addEventListener('keyup', (event) => {
             switch (event.code) {
-                case 'KeyW': moveForward = false; break;
-                case 'KeyS': moveBackward = false; break;
-                case 'KeyA': moveLeft = false; break;
-                case 'KeyD': moveRight = false; break;
-                case 'KeyQ': moveUp = false; break;
-                case 'KeyE': moveDown = false; break;
+                case 'KeyW': moveState.forward = false; break;
+                case 'KeyS': moveState.backward = false; break;
+                case 'KeyA': moveState.left = false; break;
+                case 'KeyD': moveState.right = false; break;
+                case 'KeyQ': moveState.up = false; break;
+                case 'KeyE': moveState.down = false; break;
                 case 'ShiftLeft': 
-                    isRunning = false;
+                    moveState.running = false;
                     document.getElementById('speed').textContent = 'Normal 🚶';
                     break;
             }
         });
+
+        // ==================== FUNCIÓN DE MOVIMIENTO WASD ====================
+        function updateMovement(delta) {
+            // Si no hay teclas presionadas, no hacer nada
+            const isMoving = moveState.forward || moveState.backward || 
+                           moveState.left || moveState.right || 
+                           moveState.up || moveState.down;
+            
+            if (!isMoving) return;
+
+            // Velocidad base
+            const speed = moveState.running ? RUN_SPEED : WALK_SPEED;
+            const moveDistance = speed * delta;
+            const flyDistance = FLY_SPEED * delta;
+
+            // 🔑 OBTENER DIRECCIÓN DE LA CÁMARA (a dónde mira)
+            const cameraDirection = new Vector3();
+            camera.getWorldDirection(cameraDirection);
+            
+            // Proyectar al plano horizontal (ignorar Y)
+            cameraDirection.y = 0;
+            cameraDirection.normalize();
+
+            // Vector derecho (perpendicular a la dirección)
+            const rightVector = new Vector3();
+            rightVector.crossVectors(camera.up, cameraDirection);
+            rightVector.normalize();
+
+            // 🔧 MOVIMIENTO CORREGIDO (direcciones correctas)
+            if (moveState.forward) {
+                camera.position.addScaledVector(cameraDirection, moveDistance);
+                controls.target.addScaledVector(cameraDirection, moveDistance);
+            }
+            if (moveState.backward) {
+                camera.position.addScaledVector(cameraDirection, -moveDistance);
+                controls.target.addScaledVector(cameraDirection, -moveDistance);
+            }
+            if (moveState.right) {
+                camera.position.addScaledVector(rightVector, moveDistance);
+                controls.target.addScaledVector(rightVector, moveDistance);
+            }
+            if (moveState.left) {
+                camera.position.addScaledVector(rightVector, -moveDistance);
+                controls.target.addScaledVector(rightVector, -moveDistance);
+            }
+            if (moveState.up) {
+                camera.position.y += flyDistance;
+                controls.target.y += flyDistance;
+            }
+            if (moveState.down) {
+                camera.position.y -= flyDistance;
+                controls.target.y -= flyDistance;
+            }
+        }
 
         // ==================== ILUMINACIÓN ====================
         let ambientLight = new AmbientLight(0xffffff, 0.6);
@@ -280,8 +332,6 @@
         let directionalLight = new DirectionalLight(0xffffff, 0.8);
         directionalLight.position.set(10, 20, 10);
         directionalLight.castShadow = true;
-        directionalLight.shadow.camera.far = 50;
-        directionalLight.shadow.mapSize.set(2048, 2048);
         scene.add(directionalLight);
 
         let hemisphereLight = new HemisphereLight(0x87ceeb, 0x545454, 0.3);
@@ -324,7 +374,7 @@
         function crearTexto3D() {
             const loader = new FontLoader();
             loader.load('https://threejs.org/examples/fonts/helvetiker_bold.typeface.json', (font) => {
-                const textGeometry = new TextGeometry('¡Hola Mundo 3D!', {
+                const textGeometry = new TextGeometry('Hola, Sinestesia!', {
                     font: font,
                     size: 0.5,
                     height: 0.1,
@@ -343,7 +393,7 @@
                 ];
 
                 texto3D = new Mesh(textGeometry, materials);
-                texto3D.position.set(0, 2, -2);
+                texto3D.position.set(20, 60, -0);
                 texto3D.castShadow = true;
                 texto3D.visible = false;
                 scene.add(texto3D);
@@ -435,7 +485,6 @@
 
         window.resetCamera = function() {
             camera.position.set(0, 1.6, 5);
-            camera.lookAt(0, 0, 0);
             controls.target.set(0, 0, 0);
             controls.update();
             mostrarMensaje('Cámara reseteada 🎥');
@@ -464,6 +513,7 @@
         // ==================== ESTADÍSTICAS ====================
         let frameCount = 0;
         let lastTime = performance.now();
+        let prevTime = performance.now();
 
         function actualizarStats() {
             frameCount++;
@@ -480,51 +530,18 @@
             document.getElementById('objects').textContent = scene.children.length;
         }
 
-        // ==================== ANIMACIÓN - CORREGIDA ====================
+        // ==================== ANIMACIÓN - COMPLETAMENTE REESCRITA ====================
         function animate() {
             requestAnimationFrame(animate);
 
             const time = performance.now();
             const delta = (time - prevTime) / 1000;
-
-            // Calcular movimiento WASD
-            velocity.x -= velocity.x * 10.0 * delta;
-            velocity.z -= velocity.z * 10.0 * delta;
-            velocity.y -= velocity.y * 10.0 * delta;
-
-            direction.z = Number(moveForward) - Number(moveBackward);
-            direction.x = Number(moveRight) - Number(moveLeft);
-            direction.y = Number(moveUp) - Number(moveDown);
-            direction.normalize();
-
-            const speed = isRunning ? RUN_SPEED : WALK_SPEED;
-
-            if (moveForward || moveBackward) velocity.z -= direction.z * speed * delta;
-            if (moveLeft || moveRight) velocity.x -= direction.x * speed * delta;
-            if (moveUp || moveDown) velocity.y += direction.y * FLY_SPEED * delta;
-
-            // 🔧 SOLUCIÓN AL PARPADEO: Mover cámara Y target juntos
-            const forward = new Vector3();
-            camera.getWorldDirection(forward);
-            forward.y = 0;
-            forward.normalize();
-
-            const right = new Vector3();
-            right.crossVectors(camera.up, forward).normalize();
-
-            // Mover cámara
-            camera.position.addScaledVector(forward, -velocity.z * delta);
-            camera.position.addScaledVector(right, -velocity.x * delta);
-            camera.position.y += velocity.y * delta;
-
-            // Mover target DEL MISMO MODO
-            controls.target.addScaledVector(forward, -velocity.z * delta);
-            controls.target.addScaledVector(right, -velocity.x * delta);
-            controls.target.y += velocity.y * delta;
-
             prevTime = time;
 
-            // Animar objetos 3D
+            // 1️⃣ PRIMERO: Actualizar movimiento WASD
+            updateMovement(delta);
+
+            // 2️⃣ SEGUNDO: Animar objetos 3D
             modelos3D.forEach((modelo, index) => {
                 modelo.rotation.x += 0.01;
                 modelo.rotation.y += 0.01;
@@ -533,7 +550,7 @@
 
             // Animar texto 3D
             if (texto3D && texto3DVisible) {
-                texto3D.rotation.y += 0.01;
+                texto3D.rotation.y += 0.0;
                 texto3D.position.y = 2 + Math.sin(time * 0.001) * 0.2;
             }
 
@@ -547,17 +564,18 @@
                 });
             }
 
-            // 🔧 ACTUALIZAR CONTROLES - UNA SOLA VEZ
+            // 3️⃣ TERCERO: Actualizar OrbitControls (solo para rotación)
             controls.update();
 
-            // Render principal
+            // 4️⃣ CUARTO: Renderizar
             renderer.render(scene, camera);
 
-            // Render minimap
+            // Minimap
             minimapCamera.position.x = camera.position.x;
             minimapCamera.position.z = camera.position.z;
             minimapRenderer.render(scene, minimapCamera);
 
+            // Stats
             actualizarStats();
         }
 
@@ -571,7 +589,7 @@
         });
 
         setTimeout(() => {
-            mostrarMensaje('¡Usa WASD para moverte! Shift para correr 🏃');
+            mostrarMensaje('¡WASD para moverte! Mouse para rotar 🎮');
         }, 1000);
 
     </script>
